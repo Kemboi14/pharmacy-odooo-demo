@@ -1,0 +1,320 @@
+# -*- coding: utf-8 -*-
+
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError, UserError
+import logging
+from datetime import datetime, timedelta
+
+_logger = logging.getLogger(__name__)
+
+
+class StockLot(models.Model):
+    _inherit = 'stock.lot'
+    
+    # Expiry information
+    expiry_date = fields.Date('Expiry Date', required=False, tracking=True, index=True)
+    manufacturing_date = fields.Date('Manufacturing Date', tracking=True)
+    
+    # Expiry alerts (computed fields)
+    expiry_alert_90 = fields.Boolean('90-Day Alert', compute='_compute_expiry_alerts', store=True)
+    expiry_alert_60 = fields.Boolean('60-Day Alert', compute='_compute_expiry_alerts', store=True)
+    expiry_alert_30 = fields.Boolean('30-Day Alert', compute='_compute_expiry_alerts', store=True)
+    
+    # Status fields
+    is_expired = fields.Boolean('Is Expired', compute='_compute_expiry_status', store=True)
+    is_quarantined = fields.Boolean('Is Quarantined', default=False, tracking=True)
+    quarantine_reason = fields.Selection([
+        ('expired', 'Expired'),
+        ('damaged', 'Damaged'),
+        ('recalled', 'Recalled'),
+        ('quality_issue', 'Quality Issue'),
+        ('other', 'Other')
+    ], string='Quarantine Reason')
+    quarantine_notes = fields.Text('Quarantine Notes')
+    
+    # Additional fields for pharmacy
+    batch_number = fields.Char('Batch Number', help="Manufacturer batch number")
+    manufacturer = fields.Char('Manufacturer')
+    storage_location = fields.Char('Storage Location')
+    
+    # Computed fields
+    days_to_expiry = fields.Integer(compute='_compute_days_to_expiry', store=True)
+    expiry_status = fields.Selection([
+        ('expired', 'Expired'),
+        ('expiring_30', 'Expiring in 30 Days'),
+        ('expiring_60', 'Expiring in 60 Days'),
+        ('expiring_90', 'Expiring in 90 Days'),
+        ('good', 'Good')
+    ], compute='_compute_expiry_status', store=True)
+    
+    # Stock information
+    total_quantity = fields.Float(compute='_compute_total_quantity', store=True)
+    available_quantity = fields.Float(compute='_compute_available_quantity', store=True)
+    
+    @api.depends('expiry_date')
+    def _compute_days_to_expiry(self):
+        today = fields.Date.today()
+        for lot in self:
+            if lot.expiry_date:
+                lot.days_to_expiry = (lot.expiry_date - today).days
+            else:
+                lot.days_to_expiry = 0
+    
+    @api.depends('expiry_date', 'days_to_expiry')
+    def _compute_expiry_alerts(self):
+        for lot in self:
+            if lot.days_to_expiry <= 90 and lot.days_to_expiry > 60:
+                lot.expiry_alert_90 = True
+                lot.expiry_alert_60 = False
+                lot.expiry_alert_30 = False
+            elif lot.days_to_expiry <= 60 and lot.days_to_expiry > 30:
+                lot.expiry_alert_90 = True
+                lot.expiry_alert_60 = True
+                lot.expiry_alert_30 = False
+            elif lot.days_to_expiry <= 30 and lot.days_to_expiry > 0:
+                lot.expiry_alert_90 = True
+                lot.expiry_alert_60 = True
+                lot.expiry_alert_30 = True
+            else:
+                lot.expiry_alert_90 = False
+                lot.expiry_alert_60 = False
+                lot.expiry_alert_30 = False
+    
+    @api.depends('expiry_date', 'days_to_expiry')
+    def _compute_expiry_status(self):
+        for lot in self:
+            if lot.days_to_expiry < 0:
+                lot.is_expired = True
+                lot.expiry_status = 'expired'
+            elif lot.days_to_expiry <= 30:
+                lot.is_expired = False
+                lot.expiry_status = 'expiring_30'
+            elif lot.days_to_expiry <= 60:
+                lot.is_expired = False
+                lot.expiry_status = 'expiring_60'
+            elif lot.days_to_expiry <= 90:
+                lot.is_expired = False
+                lot.expiry_status = 'expiring_90'
+            else:
+                lot.is_expired = False
+                lot.expiry_status = 'good'
+    
+    @api.depends('quant_ids')
+    def _compute_total_quantity(self):
+        for lot in self:
+            lot.total_quantity = sum(lot.quant_ids.mapped('quantity'))
+    
+    @api.depends('quant_ids')
+    def _compute_available_quantity(self):
+        for lot in self:
+            # Only count quantity in internal locations (not customer/supplier)
+            available_quants = lot.quant_ids.filtered(
+                lambda q: q.location_id.usage in ['internal', 'transit']
+            )
+            lot.available_quantity = sum(available_quants.mapped('quantity'))
+    
+    @api.constrains('expiry_date')
+    def _check_expiry_date(self):
+        for lot in self:
+            if lot.expiry_date and lot.expiry_date < fields.Date.today():
+                # Auto-quarantine expired lots
+                if not lot.is_quarantined:
+                    lot.is_quarantined = True
+                    lot.quarantine_reason = 'expired'
+                    _logger.warning(f"Lot {lot.name} auto-quarantined due to expiry")
+    
+    @api.constrains('manufacturing_date', 'expiry_date')
+    def _check_dates(self):
+        for lot in self:
+            if lot.manufacturing_date and lot.expiry_date:
+                if lot.manufacturing_date >= lot.expiry_date:
+                    raise ValidationError(_('Manufacturing date must be before expiry date'))
+    
+    def action_quarantine(self, reason, notes=''):
+        """Quarantine this lot"""
+        self.write({
+            'is_quarantined': True,
+            'quarantine_reason': reason,
+            'quarantine_notes': notes,
+        })
+        
+        # Move all stock to quarantine location
+        self._move_to_quarantine()
+    
+    def action_release_quarantine(self):
+        """Release lot from quarantine"""
+        if self.is_expired:
+            raise ValidationError(_('Cannot release expired lot from quarantine'))
+        
+        self.write({
+            'is_quarantined': False,
+            'quarantine_reason': False,
+            'quarantine_notes': False,
+        })
+    
+    def _move_to_quarantine(self):
+        """Move all stock of this lot to quarantine locations"""
+        for quant in self.quant_ids:
+            if quant.location_id.usage == 'internal' and quant.quantity > 0:
+                # Find quarantine location for this branch
+                branch = quant.location_id.branch_id
+                if branch:
+                    quarantine_location = branch.get_quarantine_location()
+                    if quarantine_location:
+                        # Create stock move to quarantine
+                        self.env['stock.move']._create_split_move(quant, quarantine_location)
+    
+    def get_location_quantities(self):
+        """Get quantity breakdown by location"""
+        location_quantities = {}
+        
+        for quant in self.quant_ids:
+            if quant.quantity > 0:
+                location_name = quant.location_id.complete_name
+                if location_name not in location_quantities:
+                    location_quantities[location_name] = {
+                        'location_id': quant.location_id.id,
+                        'quantity': 0,
+                        'branch': quant.location_id.branch_id.name if quant.location_id.branch_id else 'Unassigned'
+                    }
+                location_quantities[location_name]['quantity'] += quant.quantity
+        
+        return location_quantities
+    
+    def check_sale_allowed(self, quantity=1):
+        """
+        Check if sale is allowed for this lot
+        Returns dict with allowed status and reason
+        """
+        result = {
+            'allowed': True,
+            'reason': '',
+            'warnings': []
+        }
+        
+        # Check if lot is expired
+        if self.is_expired:
+            result['allowed'] = False
+            result['reason'] = 'Lot has expired'
+            return result
+        
+        # Check if lot is quarantined
+        if self.is_quarantined:
+            result['allowed'] = False
+            result['reason'] = f'Lot is quarantined: {self.quarantine_reason}'
+            return result
+        
+        # Check minimum expiry days
+        if self.product_id and self.days_to_expiry < self.product_id.min_expiry_days:
+            result['warnings'].append(f'Lot expires in {self.days_to_expiry} days')
+        
+        # Check available quantity
+        if self.available_quantity < quantity:
+            result['allowed'] = False
+            result['reason'] = f'Insufficient quantity. Available: {self.available_quantity}, Requested: {quantity}'
+            return result
+        
+        return result
+    
+    def get_expiry_info(self):
+        """Get formatted expiry information"""
+        if not self.expiry_date:
+            return "No expiry date"
+        
+        info = f"Expires: {self.expiry_date}"
+        
+        if self.is_expired:
+            info += " (EXPIRED)"
+        elif self.days_to_expiry <= 30:
+            info += f" (Expires in {self.days_to_expiry} days)"
+        elif self.days_to_expiry <= 90:
+            info += f" (Expires in {self.days_to_expiry} days)"
+        
+        return info
+    
+    def get_batch_info(self):
+        """Get formatted batch information"""
+        parts = []
+        
+        if self.name:
+            parts.append(f"Lot: {self.name}")
+        if self.batch_number:
+            parts.append(f"Batch: {self.batch_number}")
+        if self.manufacturer:
+            parts.append(f"Manufacturer: {self.manufacturer}")
+        if self.expiry_date:
+            parts.append(f"Expiry: {self.expiry_date}")
+        
+        return " | ".join(parts)
+    
+    @api.model
+    def get_expiring_lots(self, days=30):
+        """Get lots expiring within specified days"""
+        target_date = fields.Date.today() + timedelta(days=days)
+        
+        return self.search([
+            ('expiry_date', '<=', target_date),
+            ('expiry_date', '>=', fields.Date.today()),
+            ('is_expired', '=', False),
+        ])
+    
+    @api.model
+    def get_expired_lots(self):
+        """Get all expired lots"""
+        return self.search([('is_expired', '=', True)])
+    
+    @api.model
+    def get_quarantined_lots(self):
+        """Get all quarantined lots"""
+        return self.search([('is_quarantined', '=', True)])
+    
+    @api.model
+    def update_expiry_alerts(self):
+        """Scheduled action to update expiry alerts"""
+        lots = self.search([('expiry_date', '!=', False)])
+        
+        updated_count = 0
+        for lot in lots:
+            # Trigger recomputation of expiry status
+            lot._compute_expiry_status()
+            lot._compute_expiry_alerts()
+            updated_count += 1
+        
+        _logger.info(f"Updated expiry alerts for {updated_count} lots")
+        
+        # Auto-quarantine expired lots
+        expired_lots = lots.filtered(lambda l: l.is_expired and not l.is_quarantined)
+        for lot in expired_lots:
+            lot.action_quarantine('expired', 'Auto-quarantined due to expiry')
+        
+        _logger.info(f"Auto-quarantined {len(expired_lots)} expired lots")
+    
+    def action_view_stock_moves(self):
+        """View stock moves for this lot"""
+        return {
+            'name': _('Stock Moves'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'stock.move.line',
+            'view_mode': 'list,form',
+            'domain': [('lot_id', '=', self.id)],
+            'context': {'default_lot_id': self.id},
+        }
+    
+    def action_print_expiry_label(self):
+        """Print expiry label for this lot"""
+        return self.env.ref('Pharmacy.action_report_lot_expiry_label').report_action(self)
+    
+    def write(self, vals):
+        # If expiry date is being updated, check if it affects expiry status
+        if 'expiry_date' in vals:
+            old_expiry_date = self.expiry_date
+            new_expiry_date = fields.Date.from_string(vals['expiry_date']) if vals['expiry_date'] else False
+            
+            # If lot was expired and new date is not expired, release from quarantine
+            if old_expiry_date and new_expiry_date and old_expiry_date < fields.Date.today() and new_expiry_date >= fields.Date.today():
+                if self.is_quarantined and self.quarantine_reason == 'expired':
+                    vals['is_quarantined'] = False
+                    vals['quarantine_reason'] = False
+                    vals['quarantine_notes'] = False
+        
+        return super().write(vals)

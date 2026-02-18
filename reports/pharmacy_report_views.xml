@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Sales by Branch Report -->
+        <record id="view_report_pharmacy_sales_branch_tree" model="ir.ui.view">
+            <field name="name">report.pharmacy.sales.branch.tree</field>
+            <field name="model">report.pharmacy.sales.branch</field>
+            <field name="arch" type="xml">
+                <list string="Sales by Branch" create="false" delete="false">
+                    <field name="date"/>
+                    <field name="branch_id"/>
+                    <field name="cashier_id"/>
+                    <field name="total_sales" widget="monetary" sum="Total Sales"/>
+                    <field name="cash_sales" widget="monetary" sum="Cash Sales"/>
+                    <field name="mpesa_sales" widget="monetary" sum="M-Pesa Sales"/>
+                    <field name="card_sales" widget="monetary" sum="Card Sales"/>
+                    <field name="insurance_sales" widget="monetary" sum="Insurance Sales"/>
+                    <field name="total_orders" sum="Orders"/>
+                    <field name="total_customers" sum="Customers"/>
+                    <field name="total_prescriptions" sum="Prescriptions"/>
+                </list>
+            </field>
+        </record>
+        
+        <record id="view_report_pharmacy_sales_branch_search" model="ir.ui.view">
+            <field name="name">report.pharmacy.sales.branch.search</field>
+            <field name="model">report.pharmacy.sales.branch</field>
+            <field name="arch" type="xml">
+                <search string="Sales by Branch">
+                    <field name="branch_id"/>
+                    <field name="date"/>
+                    <field name="cashier_id"/>
+                    <filter string="Today" name="today" domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                    <filter string="This Week" name="this_week" domain="[('date', '>=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                    <filter string="This Month" name="this_month" domain="[('date', '>=', context_today().strftime('%Y-%m-01'))]"/>
+                    <filter string="This Year" name="this_year" domain="[('date', '>=', context_today().strftime('%Y-01-01'))]"/>
+                    <separator/>
+                    <group expand="0" string="Group By">
+                        <filter string="Branch" name="group_branch" context="{'group_by': 'branch_id'}"/>
+                        <filter string="Date" name="group_date" context="{'group_by': 'date:month'}"/>
+                        <filter string="Cashier" name="group_cashier" context="{'group_by': 'cashier_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        
+        <record id="action_report_pharmacy_sales_branch" model="ir.actions.act_window">
+            <field name="name">Sales by Branch</field>
+            <field name="res_model">report.pharmacy.sales.branch</field>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="view_report_pharmacy_sales_branch_tree"/>
+            <field name="search_view_id" ref="view_report_pharmacy_sales_branch_search"/>
+            <field name="context">{'search_default_this_month': 1}</field>
+        </record>
+        
+        <!-- Expiry Report -->
+        <record id="view_report_pharmacy_expiry_tree" model="ir.ui.view">
+            <field name="name">report.pharmacy.expiry.tree</field>
+            <field name="model">report.pharmacy.expiry</field>
+            <field name="arch" type="xml">
+                <list string="Stock Expiry Report" create="false" delete="false">
+                    <field name="expiry_date"/>
+                    <field name="days_to_expiry"/>
+                    <field name="expiry_bucket"/>
+                    <field name="branch_id"/>
+                    <field name="product_id"/>
+                    <field name="generic_name"/>
+                    <field name="lot_id"/>
+                    <field name="quantity" sum="Total Quantity"/>
+                    <field name="value" widget="monetary" sum="Total Value"/>
+                </list>
+            </field>
+        </record>
+        
+        <record id="view_report_pharmacy_expiry_search" model="ir.ui.view">
+            <field name="name">report.pharmacy.expiry.search</field>
+            <field name="model">report.pharmacy.expiry</field>
+            <field name="arch" type="xml">
+                <search string="Stock Expiry Report">
+                    <field name="product_id"/>
+                    <field name="lot_id"/>
+                    <field name="expiry_date"/>
+                    <field name="branch_id"/>
+                    <filter string="Expired" name="expired" domain="[('expiry_bucket', '=', 'expired')]"/>
+                    <filter string="Expiring in 30 Days" name="expiring_30" domain="[('expiry_bucket', '=', '0-30')]"/>
+                    <filter string="Expiring in 60 Days" name="expiring_60" domain="[('expiry_bucket', '=', '31-60')]"/>
+                    <filter string="Expiring in 90 Days" name="expiring_90" domain="[('expiry_bucket', '=', '61-90')]"/>
+                    <separator/>
+                    <group expand="0" string="Group By">
+                        <filter string="Branch" name="group_branch" context="{'group_by': 'branch_id'}"/>
+                        <filter string="Product" name="group_product" context="{'group_by': 'product_id'}"/>
+                        <filter string="Expiry Bucket" name="group_bucket" context="{'group_by': 'expiry_bucket'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        
+        <record id="action_report_pharmacy_expiry" model="ir.actions.act_window">
+            <field name="name">Stock Expiry Report</field>
+            <field name="res_model">report.pharmacy.expiry</field>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="view_report_pharmacy_expiry_tree"/>
+            <field name="search_view_id" ref="view_report_pharmacy_expiry_search"/>
+            <field name="context">{'search_default_expiring_30': 1}</field>
+        </record>
+        
+        <!-- Stock Movement Report -->
+        <record id="view_report_pharmacy_stock_movement_tree" model="ir.ui.view">
+            <field name="name">report.pharmacy.stock.movement.tree</field>
+            <field name="model">report.pharmacy.stock.movement</field>
+            <field name="arch" type="xml">
+                <list string="Stock Movement Analysis" create="false" delete="false">
+                    <field name="branch_id"/>
+                    <field name="product_id"/>
+                    <field name="category_id"/>
+                    <field name="movement_category"/>
+                    <field name="qty_sold_30d" sum="Total Sold (30d)"/>
+                    <field name="qty_sold_60d" sum="Total Sold (60d)"/>
+                    <field name="qty_sold_90d" sum="Total Sold (90d)"/>
+                    <field name="current_stock" sum="Current Stock"/>
+                    <field name="days_of_stock"/>
+                </list>
+            </field>
+        </record>
+        
+        <record id="view_report_pharmacy_stock_movement_search" model="ir.ui.view">
+            <field name="name">report.pharmacy.stock.movement.search</field>
+            <field name="model">report.pharmacy.stock.movement</field>
+            <field name="arch" type="xml">
+                <search string="Stock Movement Analysis">
+                    <field name="product_id"/>
+                    <field name="category_id"/>
+                    <field name="branch_id"/>
+                    <filter string="Fast Moving" name="fast_moving" domain="[('movement_category', '=', 'fast')]"/>
+                    <filter string="Medium Moving" name="medium_moving" domain="[('movement_category', '=', 'medium')]"/>
+                    <filter string="Slow Moving" name="slow_moving" domain="[('movement_category', '=', 'slow')]"/>
+                    <filter string="Dead Stock" name="dead_stock" domain="[('movement_category', '=', 'dead')]"/>
+                    <separator/>
+                    <group expand="0" string="Group By">
+                        <filter string="Branch" name="group_branch" context="{'group_by': 'branch_id'}"/>
+                        <filter string="Category" name="group_category" context="{'group_by': 'category_id'}"/>
+                        <filter string="Movement Category" name="group_movement" context="{'group_by': 'movement_category'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        
+        <record id="action_report_pharmacy_stock_movement" model="ir.actions.act_window">
+            <field name="name">Stock Movement Analysis</field>
+            <field name="res_model">report.pharmacy.stock.movement</field>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="view_report_pharmacy_stock_movement_tree"/>
+            <field name="search_view_id" ref="view_report_pharmacy_stock_movement_search"/>
+        </record>
+        
+        <!-- Claims Summary Report -->
+        <record id="view_report_pharmacy_claims_summary_tree" model="ir.ui.view">
+            <field name="name">report.pharmacy.claims.summary.tree</field>
+            <field name="model">report.pharmacy.claims.summary</field>
+            <field name="arch" type="xml">
+                <list string="Insurance Claims Summary" create="false" delete="false">
+                    <field name="month"/>
+                    <field name="insurer_id"/>
+                    <field name="plan_id"/>
+                    <field name="branch_id"/>
+                    <field name="total_claims" sum="Total Claims"/>
+                    <field name="total_claimed_amount" widget="monetary" sum="Claimed Amount"/>
+                    <field name="total_approved_amount" widget="monetary" sum="Approved Amount"/>
+                    <field name="total_rejected_amount" widget="monetary" sum="Rejected Amount"/>
+                    <field name="approval_rate" widget="percentage"/>
+                    <field name="pending_claims" sum="Pending"/>
+                    <field name="outstanding_amount" widget="monetary" sum="Outstanding"/>
+                </list>
+            </field>
+        </record>
+        
+        <record id="view_report_pharmacy_claims_summary_search" model="ir.ui.view">
+            <field name="name">report.pharmacy.claims.summary.search</field>
+            <field name="model">report.pharmacy.claims.summary</field>
+            <field name="arch" type="xml">
+                <search string="Insurance Claims Summary">
+                    <field name="insurer_id"/>
+                    <field name="plan_id"/>
+                    <field name="branch_id"/>
+                    <field name="month"/>
+                    <filter string="This Month" name="this_month" domain="[('month', '>=', context_today().strftime('%Y-%m-01'))]"/>
+                    <filter string="This Year" name="this_year" domain="[('month', '>=', context_today().strftime('%Y-01-01'))]"/>
+                    <separator/>
+                    <group expand="0" string="Group By">
+                        <filter string="Insurer" name="group_insurer" context="{'group_by': 'insurer_id'}"/>
+                        <filter string="Plan" name="group_plan" context="{'group_by': 'plan_id'}"/>
+                        <filter string="Branch" name="group_branch" context="{'group_by': 'branch_id'}"/>
+                        <filter string="Month" name="group_month" context="{'group_by': 'month:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        
+        <record id="action_report_pharmacy_claims_summary" model="ir.actions.act_window">
+            <field name="name">Insurance Claims Summary</field>
+            <field name="res_model">report.pharmacy.claims.summary</field>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="view_report_pharmacy_claims_summary_tree"/>
+            <field name="search_view_id" ref="view_report_pharmacy_claims_summary_search"/>
+            <field name="context">{'search_default_this_month': 1}</field>
+        </record>
+        
+        <!-- Rejection Reasons Report -->
+        <record id="view_report_pharmacy_rejection_reasons_tree" model="ir.ui.view">
+            <field name="name">report.pharmacy.rejection.reasons.tree</field>
+            <field name="model">report.pharmacy.rejection.reasons</field>
+            <field name="arch" type="xml">
+                <list string="Claim Rejection Reasons" create="false" delete="false">
+                    <field name="insurer_id"/>
+                    <field name="rejection_reason"/>
+                    <field name="occurrences" sum="Total Occurrences"/>
+                    <field name="total_rejected_amount" widget="monetary" sum="Rejected Amount"/>
+                    <field name="percentage" widget="percentage"/>
+                </list>
+            </field>
+        </record>
+        
+        <record id="view_report_pharmacy_rejection_reasons_search" model="ir.ui.view">
+            <field name="name">report.pharmacy.rejection.reasons.search</field>
+            <field name="model">report.pharmacy.rejection.reasons</field>
+            <field name="arch" type="xml">
+                <search string="Claim Rejection Reasons">
+                    <field name="insurer_id"/>
+                    <field name="rejection_reason"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Insurer" name="group_insurer" context="{'group_by': 'insurer_id'}"/>
+                        <filter string="Rejection Reason" name="group_reason" context="{'group_by': 'rejection_reason'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        
+        <record id="action_report_pharmacy_rejection_reasons" model="ir.actions.act_window">
+            <field name="name">Claim Rejection Reasons</field>
+            <field name="res_model">report.pharmacy.rejection.reasons</field>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="view_report_pharmacy_rejection_reasons_tree"/>
+            <field name="search_view_id" ref="view_report_pharmacy_rejection_reasons_search"/>
+        </record>
+        
+        <!-- Pharmacy Dashboard -->
+        <record id="view_pharmacy_dashboard" model="ir.ui.view">
+            <field name="name">pharmacy.dashboard</field>
+            <field name="model">pharmacy.dashboard</field>
+            <field name="arch" type="xml">
+                <kanban>
+                    <view type="graph" ref="view_report_pharmacy_sales_branch_graph"/>
+                    <view type="pivot" ref="view_report_pharmacy_sales_branch_pivot"/>
+                    <group>
+                        <aggregate name="today_sales" field="total_sales" 
+                                  domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"
+                                  widget="monetary"/>
+                        <aggregate name="mtd_sales" field="total_sales"
+                                  domain="[('date', '>=', context_today().strftime('%Y-%m-01'))]"
+                                  widget="monetary"/>
+                        <aggregate name="expired_stock_value" field="value"
+                                  domain="[('expiry_bucket', '=', 'expired')]"
+                                  widget="monetary" style="color: red"/>
+                        <aggregate name="expiring_30d_value" field="value"
+                                  domain="[('expiry_bucket', '=', '0-30')]"
+                                  widget="monetary" style="color: orange"/>
+                    </group>
+                </kanban>
+            </field>
+        </record>
+        
+        <!-- Graph Views -->
+        <record id="view_report_pharmacy_sales_branch_graph" model="ir.ui.view">
+            <field name="name">report.pharmacy.sales.branch.graph</field>
+            <field name="model">report.pharmacy.sales.branch</field>
+            <field name="arch" type="xml">
+                <graph string="Sales Trend" type="line">
+                    <field name="date"/>
+                    <field name="total_sales" type="measure"/>
+                    <field name="branch_id" />
+                </graph>
+            </field>
+        </record>
+        
+        <record id="view_report_pharmacy_sales_branch_pivot" model="ir.ui.view">
+            <field name="name">report.pharmacy.sales.branch.pivot</field>
+            <field name="model">report.pharmacy.sales.branch</field>
+            <field name="arch" type="xml">
+                <pivot string="Sales Analysis">
+                    <field name="total_sales" type="measure"/>
+                    <field name="branch_id" type="col"/>
+                    <field name="date" type="row" interval="month"/>
+                </pivot>
+            </field>
+        </record>
+        
+    </data>
+</odoo>

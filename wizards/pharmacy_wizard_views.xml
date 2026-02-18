@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Inter-Branch Transfer Wizard -->
+        <record id="view_inter_branch_transfer_wizard" model="ir.ui.view">
+            <field name="name">Inter-Branch Transfer Wizard</field>
+            <field name="model">inter.branch.transfer.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Transfer Products Between Branches">
+                    <group string="Transfer Details" class="alert alert-info">
+                        <group>
+                            <field name="source_branch_id" required="1" options="{'no_create': True}" help="Which branch is sending"/>
+                            <field name="destination_branch_id" required="1" options="{'no_create': True}" help="Which branch is receiving"/>
+                        </group>
+                        <group>
+                            <field name="transfer_date" required="1" help="Date of transfer"/>
+                            <field name="reason" placeholder="Why are we transferring these products?" required="1"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Products to Transfer">
+                        <p class="text-muted" style="font-size: 12px;">
+                            Add all products to be transferred. Lot numbers help track expiry dates.
+                        </p>
+                    </group>
+                    <field name="line_ids" nolabel="1">
+                        <list editable="bottom">
+                            <field name="product_id" required="1" help="Product being transferred"/>
+                            <field name="quantity" required="1" help="How many units"/>
+                            <field name="lot_id" domain="[('product_id', '=', product_id), ('is_expired', '=', False)]" help="Specific batch/lot"/>
+                            <field name="uom_id" readonly="1" help="Unit of measurement"/>
+                        </list>
+                    </field>
+                    
+                    <footer>
+                        <button name="action_create_transfer" type="object" string="Create Transfer" class="btn-primary" confirm="Confirm creating this inter-branch transfer?"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Batch Expiry Report Wizard -->
+        <record id="view_batch_expiry_report_wizard" model="ir.ui.view">
+            <field name="name">Batch Expiry Report Wizard</field>
+            <field name="model">batch.expiry.report.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Generate Batch Expiry Report">
+                    <group string="Report Filters" class="alert alert-info">
+                        <group>
+                            <field name="branch_id" help="Leave blank for all branches"/>
+                            <field name="category_id" help="Leave blank for all products"/>
+                        </group>
+                        <group>
+                            <field name="date_from" required="1" help="From this date"/>
+                            <field name="date_to" required="1" help="To this date"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Include in Report">
+                        <p class="text-muted" style="font-size: 12px;">
+                            Select which products to include in the analysis.
+                        </p>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="include_expired" help="Show already expired products"/>
+                            <field name="include_near_expiry" help="Show products approaching expiry"/>
+                        </group>
+                        <group>
+                            <label for="near_expiry_days" string="Days Before Expiry"/>
+                            <field name="near_expiry_days" placeholder="e.g. 30" help="Products expiring within this many days" invisible="not include_near_expiry"/>
+                        </group>
+                    </group>
+                    
+                    <footer>
+                        <button name="action_generate_report" type="object" string="Generate Report" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Insurance Claims Reconciliation Wizard -->
+        <record id="view_insurance_reconciliation_wizard" model="ir.ui.view">
+            <field name="name">Insurance Claims Reconciliation Wizard</field>
+            <field name="model">insurance.reconciliation.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Reconcile Insurance Claims">
+                    <group string="Step 1: Select Criteria" class="alert alert-info">
+                        <group>
+                            <field name="insurer_id" required="1" options="{'no_create': True}" help="Which insurance company"/>
+                            <field name="reconciliation_type" required="1" help="How to reconcile"/>
+                        </group>
+                        <group>
+                            <field name="date_from" required="1" help="Claims from this date"/>
+                            <field name="date_to" required="1" help="Claims until this date"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Manual Reconciliation" invisible="reconciliation_type != 'manual'">
+                            <group string="Step 2: Select Claims to Reconcile" class="alert alert-warning">
+                                <p style="font-size: 12px;">
+                                    Review and select which claims should be reconciled against insurer statement.
+                                </p>
+                            </group>
+                            <field name="claim_ids" nolabel="1">
+                                <list>
+                                    <field name="name" readonly="1"/>
+                                    <field name="claim_date" readonly="1"/>
+                                    <field name="total_amount" widget="monetary" readonly="1"/>
+                                    <field name="approved_amount" widget="monetary" readonly="1"/>
+                                    <field name="status" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        
+                        <page string="Import Statement" invisible="reconciliation_type != 'import'">
+                            <group string="Step 2: Upload Insurer Statement">
+                                <p class="text-muted" style="font-size: 12px;">
+                                    Upload the statement file from your insurance company (CSV or Excel format).
+                                </p>
+                                <field name="statement_file" filename="filename" required="1" help="Select the statement file to import"/>
+                                <field name="filename" invisible="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                    
+                    <footer>
+                        <button name="action_reconcile" type="object" string="Reconcile" class="btn-primary" confirm="Proceed with reconciliation?"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Stock Picking Variance Wizard -->
+        <record id="view_stock_picking_variance_wizard" model="ir.ui.view">
+            <field name="name">Stock Picking Variance Wizard</field>
+            <field name="model">stock.picking.variance.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Record Delivery Variances">
+                    <group>
+                        <field name="picking_id" readonly="1" help="Associated delivery/receipt"/>
+                    </group>
+                    
+                    <group string="Record Any Discrepancies" class="alert alert-warning">
+                        <p style="font-size: 12px;">
+                            Record any differences between what was supposed to be received and what actually arrived.
+                        </p>
+                    </group>
+                    
+                    <field name="variance_line_ids" nolabel="1">
+                        <list editable="bottom">
+                            <field name="product_id" required="1" help="Product with variance"/>
+                            <field name="lot_id" domain="[('product_id', '=', product_id)]" help="Specific batch (if applicable)"/>
+                            <field name="expected_quantity" readonly="1" help="What was ordered"/>
+                            <field name="received_quantity" required="1" help="What actually arrived"/>
+                            <field name="variance_quantity" readonly="1" help="Difference (auto-calculated)"/>
+                            <field name="variance_type" required="1" help="Short, Over, Damage, etc."/>
+                            <field name="variance_reason" placeholder="Why?"/>
+                        </list>
+                    </field>
+                    
+                    <group>
+                        <field name="notes" nolabel="1" placeholder="Additional notes about these variances..." rows="4"/>
+                    </group>
+                    
+                    <footer>
+                        <button name="action_record_variances" type="object" string="Record Variances" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Patient Insurance Enrollment Wizard -->
+        <record id="view_patient_insurance_wizard" model="ir.ui.view">
+            <field name="name">Patient Insurance Enrollment Wizard</field>
+            <field name="model">patient.insurance.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Enroll Patient in Insurance Plan">
+                    <group string="Step 1: Patient &amp; Insurance Selection" class="alert alert-info">
+                        <group>
+                            <field name="patient_id" required="1" options="{'no_create': True}" help="Select the patient"/>
+                            <field name="insurer_id" required="1" options="{'no_create': True}" help="Select insurance company"/>
+                        </group>
+                        <group>
+                            <field name="plan_id" required="1" options="{'no_create': True}" help="Select the insurance plan"/>
+                            <field name="member_number" required="1" placeholder="e.g. INS-2024-001" help="Insurer's member ID"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Step 2: Policy Period Information">
+                        <group>
+                            <field name="valid_from" required="1" help="Policy starts on this date"/>
+                            <field name="valid_to" required="1" help="Policy ends on this date"/>
+                        </group>
+                        <group>
+                            <field name="relationship_to_member" help="e.g. Self, Spouse, Child, Parent"/>
+                            <field name="policy_number" placeholder="Optional: Policy reference number"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Step 3: Coverage Details">
+                        <group>
+                            <field name="coverage_percentage" widget="percentage" help="% of cost insurer covers"/>
+                            <field name="copay_percentage" widget="percentage" help="% patient must pay"/>
+                        </group>
+                        <group>
+                            <field name="monthly_limit" widget="monetary" help="Max coverage per month"/>
+                            <field name="per_visit_limit" widget="monetary" help="Max per visit"/>
+                        </group>
+                    </group>
+                    
+                    <footer>
+                        <button name="action_enroll" type="object" string="Enroll Patient" class="btn-primary" confirm="Are you sure you want to enroll this patient in this insurance plan?"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Stock Adjustment Wizard -->
+        <record id="view_stock_adjustment_wizard" model="ir.ui.view">
+            <field name="name">Stock Adjustment Wizard</field>
+            <field name="model">stock.adjustment.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Adjust Inventory Stock">
+                    <group string="Adjustment Details" class="alert alert-info">
+                        <group>
+                            <field name="branch_id" required="1" options="{'no_create': True}" help="Which branch location"/>
+                            <field name="location_id" required="1" options="{'no_create': True}" help="Which shelving location"/>
+                        </group>
+                        <group>
+                            <field name="adjustment_date" required="1" help="Date of physical count"/>
+                            <field name="reason" required="1" help="Why is stock being adjusted? (Shrinkage, Count Error, etc.)" placeholder="e.g. Monthly inventory count, Damaged goods, Expiry write-off"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Products Being Adjusted">
+                        <p class="text-muted" style="font-size: 12px;">
+                            Enter each product and the adjustment amount. Negative numbers reduce stock, positive increase it.
+                        </p>
+                    </group>
+                    <field name="line_ids" nolabel="1">
+                        <list editable="bottom">
+                            <field name="product_id" required="1" help="Which product"/>
+                            <field name="lot_id" domain="[('product_id', '=', product_id)]" help="Specific batch (optional)"/>
+                            <field name="current_quantity" readonly="1" help="Current system stock"/>
+                            <field name="adjustment_quantity" required="1" help="How much to add/remove (+/-number)"/>
+                            <field name="adjustment_type" required="1" help="Type of adjustment"/>
+                            <field name="notes" placeholder="Details of this adjustment"/>
+                        </list>
+                    </field>
+                    
+                    <footer>
+                        <button name="action_adjust_stock" type="object" string="Adjust Stock" class="btn-primary" confirm="Confirm these stock adjustments?"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Actions -->
+        
+        <record id="action_inter_branch_transfer_wizard" model="ir.actions.act_window">
+            <field name="name">Inter-Branch Transfer</field>
+            <field name="res_model">inter.branch.transfer.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        
+        <record id="action_batch_expiry_report_wizard" model="ir.actions.act_window">
+            <field name="name">Batch Expiry Report</field>
+            <field name="res_model">batch.expiry.report.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        
+        <record id="action_insurance_reconciliation_wizard" model="ir.actions.act_window">
+            <field name="name">Insurance Claims Reconciliation</field>
+            <field name="res_model">insurance.reconciliation.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        
+        <record id="action_patient_insurance_wizard" model="ir.actions.act_window">
+            <field name="name">Enroll Patient Insurance</field>
+            <field name="res_model">patient.insurance.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        
+        <record id="action_stock_adjustment_wizard" model="ir.actions.act_window">
+            <field name="name">Stock Adjustment</field>
+            <field name="res_model">stock.adjustment.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        
+    </data>
+</odoo>
