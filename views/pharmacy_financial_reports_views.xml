@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Financial Reports Views -->
-    
+
     <!-- Sales by Branch Report -->
     <record id="view_report_pharmacy_sales_branch_tree" model="ir.ui.view">
         <field name="name">report.pharmacy.sales.branch.list</field>
@@ -21,7 +21,7 @@
             </list>
         </field>
     </record>
-    
+
     <record id="view_report_pharmacy_sales_branch_graph" model="ir.ui.view">
         <field name="name">report.pharmacy.sales.branch.graph</field>
         <field name="model">report.pharmacy.sales.branch</field>
@@ -33,7 +33,7 @@
             </graph>
         </field>
     </record>
-    
+
     <record id="view_report_pharmacy_sales_branch_pivot" model="ir.ui.view">
         <field name="name">report.pharmacy.sales.branch.pivot</field>
         <field name="model">report.pharmacy.sales.branch</field>
@@ -46,7 +46,7 @@
             </pivot>
         </field>
     </record>
-    
+
     <record id="action_report_pharmacy_sales_branch" model="ir.actions.act_window">
         <field name="name">Sales by Branch Report</field>
         <field name="res_model">report.pharmacy.sales.branch</field>
@@ -60,7 +60,7 @@
             </p>
         </field>
     </record>
-    
+
     <!-- Expiry Report -->
     <record id="view_report_pharmacy_expiry_tree" model="ir.ui.view">
         <field name="name">report.pharmacy.expiry.tree</field>
@@ -78,7 +78,7 @@
             </list>
         </field>
     </record>
-    
+
     <record id="view_report_pharmacy_expiry_graph" model="ir.ui.view">
         <field name="name">report.pharmacy.expiry.graph</field>
         <field name="model">report.pharmacy.expiry</field>
@@ -89,7 +89,7 @@
             </graph>
         </field>
     </record>
-    
+
     <record id="action_report_pharmacy_expiry" model="ir.actions.act_window">
         <field name="name">Stock Expiry Report</field>
         <field name="res_model">report.pharmacy.expiry</field>
@@ -103,7 +103,7 @@
             </p>
         </field>
     </record>
-    
+
     <!-- Stock Movement Report -->
     <record id="view_report_pharmacy_stock_movement_tree" model="ir.ui.view">
         <field name="name">report.pharmacy.stock.movement.tree</field>
@@ -122,7 +122,7 @@
             </list>
         </field>
     </record>
-    
+
     <record id="view_report_pharmacy_stock_movement_graph" model="ir.ui.view">
         <field name="name">report.pharmacy.stock.movement.graph</field>
         <field name="model">report.pharmacy.stock.movement</field>
@@ -133,7 +133,7 @@
             </graph>
         </field>
     </record>
-    
+
     <record id="action_report_pharmacy_stock_movement" model="ir.actions.act_window">
         <field name="name">Stock Movement Analysis</field>
         <field name="res_model">report.pharmacy.stock.movement</field>
@@ -147,7 +147,7 @@
             </p>
         </field>
     </record>
-    
+
     <!-- Claims Summary Report -->
     <record id="view_report_pharmacy_claims_summary_tree" model="ir.ui.view">
         <field name="name">report.pharmacy.claims.summary.tree</field>
@@ -166,7 +166,7 @@
             </list>
         </field>
     </record>
-    
+
     <record id="view_report_pharmacy_claims_summary_graph" model="ir.ui.view">
         <field name="name">report.pharmacy.claims.summary.graph</field>
         <field name="model">report.pharmacy.claims.summary</field>
@@ -178,7 +178,7 @@
             </graph>
         </field>
     </record>
-    
+
     <record id="view_report_pharmacy_claims_summary_pivot" model="ir.ui.view">
         <field name="name">report.pharmacy.claims.summary.pivot</field>
         <field name="model">report.pharmacy.claims.summary</field>
@@ -191,7 +191,7 @@
             </pivot>
         </field>
     </record>
-    
+
     <record id="action_report_pharmacy_claims_summary" model="ir.actions.act_window">
         <field name="name">Insurance Claims Summary</field>
         <field name="res_model">report.pharmacy.claims.summary</field>
@@ -205,7 +205,7 @@
             </p>
         </field>
     </record>
-    
+
     <!-- Branch P&L Report -->
     <record id="view_report_pharmacy_branch_pnl_tree" model="ir.ui.view">
         <field name="name">report.pharmacy.branch.pnl.tree</field>
@@ -224,7 +224,7 @@
             </list>
         </field>
     </record>
-    
+
     <record id="view_report_pharmacy_branch_pnl_graph" model="ir.ui.view">
         <field name="name">report.pharmacy.branch.pnl.graph</field>
         <field name="model">report.pharmacy.branch.pnl</field>
@@ -236,7 +236,7 @@
             </graph>
         </field>
     </record>
-    
+
     <record id="action_report_pharmacy_branch_pnl" model="ir.actions.act_window">
         <field name="name">Branch Profit &amp; Loss</field>
         <field name="res_model">report.pharmacy.branch.pnl</field>
@@ -250,7 +250,7 @@
             </p>
         </field>
     </record>
-    
+
     <!-- Rejection Reasons Report -->
     <record id="view_report_pharmacy_rejection_reasons_tree" model="ir.ui.view">
         <field name="name">report.pharmacy.rejection.reasons.tree</field>
@@ -265,7 +265,7 @@
             </list>
         </field>
     </record>
-    
+
     <record id="view_report_pharmacy_rejection_reasons_graph" model="ir.ui.view">
         <field name="name">report.pharmacy.rejection.reasons.graph</field>
         <field name="model">report.pharmacy.rejection.reasons</field>
@@ -276,7 +276,7 @@
             </graph>
         </field>
     </record>
-    
+
     <record id="action_report_pharmacy_rejection_reasons" model="ir.actions.act_window">
         <field name="name">Claim Rejection Reasons</field>
         <field name="res_model">report.pharmacy.rejection.reasons</field>
@@ -290,67 +290,67 @@
             </p>
         </field>
     </record>
-    
-    <!-- Financial Reports Menu -->
-    <menuitem id="menu_pharmacy_financial_reports"
+
+    <!-- Financial Reports Menu (under Accounting) -->
+    <menuitem id="menu_pharmacy_acct_financial_reports"
               name="Financial Reports"
               parent="Pharmacy.menu_pharmacy_accounting"
               sequence="50"/>
-              
-    <menuitem id="menu_pharmacy_sales_reports"
+
+    <menuitem id="menu_pharmacy_fin_sales_reports"
               name="Sales Reports"
-              parent="menu_pharmacy_financial_reports"
+              parent="menu_pharmacy_acct_financial_reports"
               sequence="10"/>
-              
-    <menuitem id="menu_pharmacy_sales_branch"
+
+    <menuitem id="menu_pharmacy_fin_sales_branch"
               name="Sales by Branch"
-              parent="menu_pharmacy_sales_reports"
+              parent="menu_pharmacy_fin_sales_reports"
               action="action_report_pharmacy_sales_branch"
               sequence="10"/>
-              
-    <menuitem id="menu_pharmacy_stock_reports"
+
+    <menuitem id="menu_pharmacy_fin_stock_reports"
               name="Stock Reports"
-              parent="menu_pharmacy_financial_reports"
+              parent="menu_pharmacy_acct_financial_reports"
               sequence="20"/>
-              
-    <menuitem id="menu_pharmacy_expiry_report"
+
+    <menuitem id="menu_pharmacy_fin_expiry_report"
               name="Expiry Report"
-              parent="menu_pharmacy_stock_reports"
+              parent="menu_pharmacy_fin_stock_reports"
               action="action_report_pharmacy_expiry"
               sequence="10"/>
-              
-    <menuitem id="menu_pharmacy_movement_report"
+
+    <menuitem id="menu_pharmacy_fin_movement_report"
               name="Stock Movement"
-              parent="menu_pharmacy_stock_reports"
+              parent="menu_pharmacy_fin_stock_reports"
               action="action_report_pharmacy_stock_movement"
               sequence="20"/>
-              
-    <menuitem id="menu_pharmacy_insurance_reports"
+
+    <menuitem id="menu_pharmacy_fin_insurance_reports"
               name="Insurance Reports"
-              parent="menu_pharmacy_financial_reports"
+              parent="menu_pharmacy_acct_financial_reports"
               sequence="30"/>
-              
-    <menuitem id="menu_pharmacy_claims_summary"
+
+    <menuitem id="menu_pharmacy_fin_claims_summary"
               name="Claims Summary"
-              parent="menu_pharmacy_insurance_reports"
+              parent="menu_pharmacy_fin_insurance_reports"
               action="action_report_pharmacy_claims_summary"
               sequence="10"/>
-              
-    <menuitem id="menu_pharmacy_rejection_reasons"
+
+    <menuitem id="menu_pharmacy_fin_rejection_reasons"
               name="Rejection Reasons"
-              parent="menu_pharmacy_insurance_reports"
+              parent="menu_pharmacy_fin_insurance_reports"
               action="action_report_pharmacy_rejection_reasons"
               sequence="20"/>
-              
-    <menuitem id="menu_pharmacy_profit_loss"
+
+    <menuitem id="menu_pharmacy_fin_profit_loss"
               name="Profit &amp; Loss"
-              parent="menu_pharmacy_financial_reports"
+              parent="menu_pharmacy_acct_financial_reports"
               sequence="40"/>
-              
-    <menuitem id="menu_pharmacy_branch_pnl"
+
+    <menuitem id="menu_pharmacy_fin_branch_pnl"
               name="Branch P&amp;L"
-              parent="menu_pharmacy_profit_loss"
+              parent="menu_pharmacy_fin_profit_loss"
               action="action_report_pharmacy_branch_pnl"
               sequence="10"/>
-              
+
 </odoo>

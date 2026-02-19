@@ -1,4 +1,15 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_report_pharmacy_sales_branch_user,report.pharmacy.sales.branch.user,model_report_pharmacy_sales_branch,base.group_user,1,0,0,0
+access_report_pharmacy_expiry_user,report.pharmacy.expiry.user,model_report_pharmacy_expiry,base.group_user,1,0,0,0
+access_report_pharmacy_stock_movement_user,report.pharmacy.stock.movement.user,model_report_pharmacy_stock_movement,base.group_user,1,0,0,0
+access_report_pharmacy_claims_summary_user,report.pharmacy.claims.summary.user,model_report_pharmacy_claims_summary,base.group_user,1,0,0,0
+access_report_pharmacy_branch_pnl_user,report.pharmacy.branch.pnl.user,model_report_pharmacy_branch_pnl,base.group_user,1,0,0,0
+access_report_pharmacy_rejection_reasons_user,report.pharmacy.rejection.reasons.user,model_report_pharmacy_rejection_reasons,base.group_user,1,0,0,0
+access_pharmacy_dashboard_manager,pharmacy.dashboard.manager,model_pharmacy_dashboard,group_pharmacy_manager,1,0,0,0
+access_mpesa_unmatched_transaction_manager,mpesa.unmatched.transaction.manager,model_mpesa_unmatched_transaction,group_pharmacy_manager,1,1,1,1
+access_mpesa_statement_import_manager,mpesa.statement.import.manager,model_mpesa_statement_import,group_pharmacy_manager,1,1,1,1
+access_mpesa_payment_match_wizard_manager,mpesa.payment.match.wizard.manager,model_mpesa_payment_match_wizard,group_pharmacy_manager,1,1,1,1
+access_etims_report_wizard_manager,etims.report.wizard.manager,model_etims_report_wizard,group_pharmacy_manager,1,1,1,1
 access_pharmacy_branch_user,pharmacy.branch.user,model_pharmacy_branch,base.group_user,1,0,0,0
 access_pharmacy_branch_manager,pharmacy.branch.manager,model_pharmacy_branch,group_pharmacy_manager,1,1,1,0
 access_pharmacy_branch_admin,pharmacy.branch.admin,model_pharmacy_branch,group_pharmacy_admin,1,1,1,1

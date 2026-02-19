@@ -315,18 +315,19 @@ class MpesaStatementImport(models.TransientModel):
         """Import M-Pesa statement and reconcile payments"""
         try:
             # Parse CSV/Excel file
+            import base64
             import io
 
             import pandas as pd
 
-            data = self.file.decode("base64")
+            raw_data = base64.b64decode(self.file)
 
             # Try to parse as CSV first
             try:
-                df = pd.read_csv(io.StringIO(data))
-            except:
-                # Try Excel
-                df = pd.read_excel(io.BytesIO(data))
+                df = pd.read_csv(io.StringIO(raw_data.decode("utf-8")))
+            except Exception:
+                # Try Excel (needs bytes, not str)
+                df = pd.read_excel(io.BytesIO(raw_data))
 
             # Expected columns: Transaction Code, Amount, Phone, Date, Time
             matched_count = 0

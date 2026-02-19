@@ -24,54 +24,79 @@
         <field name="name">pharmacy.coverage.rule.form</field>
         <field name="model">pharmacy.coverage.rule</field>
         <field name="arch" type="xml">
-            <form string="Coverage Rule">
+            <form string="Insurance Coverage Rule">
+                <header>
+                    <field name="active" widget="boolean_toggle"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <label for="plan_id" string="Insurance Plan *"/>
                         <h1>
                             <field name="plan_id" required="1" options="{'no_create': True}" help="Insurance plan this rule applies to"/>
                         </h1>
+                        <label for="name" string="Rule Description"/>
+                        <p>
+                            <field name="name" placeholder="e.g. Generic Drug Coverage, Exclusion List" class="oe_inline"/>
+                        </p>
                     </div>
                     
-                    <group name="rule_applicability" string="What Does This Rule Cover?" class="mt-4">
-                        <group name="scope">
-                            <field name="product_id" placeholder="e.g. Aspirin 100mg" options="{'no_create': True}" help="Leave empty to apply to all products in category"/>
-                            <field name="category_id" placeholder="e.g. Pain Relief" options="{'no_create': True}" help="Product category this rule applies to"/>
-                            <field name="is_exclusion" widget="boolean_toggle" help="Check if this is an exclusion (NOT covered)"/>
+                    <group name="rule_scope" string="Rule Scope &amp; Applicability">
+                        <group name="product_scope">
+                            <field name="product_id" placeholder="e.g. Aspirin 100mg" options="{'no_create': True}" help="Specific product this rule applies to (leave empty for category-based rule)"/>
+                            <field name="category_id" placeholder="e.g. Pain Relief, Antibiotics" options="{'no_create': True}" help="Product category this rule applies to"/>
+                            <field name="is_exclusion" widget="boolean_toggle" help="Check if this rule excludes items from coverage"/>
                         </group>
-                        <group name="activation">
-                            <field name="priority" help="Higher priority rules apply first"/>
-                            <field name="active" widget="boolean_toggle" help="Activate/deactivate this rule"/>
+                        <group name="rule_settings">
+                            <field name="priority" placeholder="1 = Highest" help="Higher priority rules are evaluated first (1=highest)"/>
+                            <field name="branch_ids" widget="many2many_tags" help="Leave empty to apply to all branches"/>
                         </group>
                     </group>
                     
-                    <group name="coverage_details" string="Coverage &amp; Cost Sharing" class="mt-4">
-                        <group name="insurance_share">
-                            <field name="coverage_percentage" required="1" widget="percentage" help="% insurance will cover (e.g. 80 means insurance pays 80%)"/>
-                            <field name="copay_percentage" widget="percentage" help="% patient pay as percentage of drug cost"/>
-                            <field name="copay_amount" help="Fixed amount patient must pay"/>
+                    <group name="coverage_financial" string="Coverage &amp; Cost Sharing">
+                        <group name="insurance_coverage">
+                            <field name="coverage_percentage" required="1" widget="percentage" help="Percentage covered by insurance (e.g., 80 = 80% coverage)"/>
+                            <field name="copay_percentage" widget="percentage" help="Patient co-payment as percentage of drug cost"/>
+                            <field name="copay_amount" help="Fixed co-payment amount (overrides percentage if set)"/>
+                        </group>
+                        <group name="coverage_limits">
+                            <field name="max_quantity_per_visit" help="Maximum quantity per patient visit"/>
+                            <field name="max_quantity_per_month" help="Maximum quantity per patient per month"/>
+                            <field name="max_amount_per_claim" help="Maximum claim amount per submission"/>
                         </group>
                     </group>
                     
                     <notebook>
-                        <page string="Limits">
-                            <group>
+                        <page string="Clinical Requirements" name="clinical">
+                            <group string="Prescription Requirements">
                                 <group>
-                                    <field name="max_quantity_per_visit"/>
-                                    <field name="max_quantity_per_month"/>
+                                    <field name="require_prescription" widget="boolean_toggle" help="Prescription required for coverage"/>
+                                    <field name="require_generic_substitution" widget="boolean_toggle" help="Generic substitution required when available"/>
+                                    <field name="require_preauth" widget="boolean_toggle" help="Pre-authorization required"/>
                                 </group>
                                 <group>
-                                    <field name="require_generic_substitution"/>
-                                    <field name="require_prescription"/>
-                                    <field name="require_preauth"/>
-                                    <field name="preauth_threshold"/>
+                                    <field name="preauth_threshold" help="Pre-auth required above this amount"/>
+                                    <field name="valid_prescriber_types" placeholder="e.g. MD, DO, NP" help="Allowed prescriber credentials"/>
                                 </group>
                             </group>
                         </page>
                         
-                        <page string="Exclusion">
-                            <group modifiers="{'invisible': [['is_exclusion', '=', False]]}">
-                                <field name="exclusion_reason" nolabel="1"/>
+                        <page string="Exclusion Details" name="exclusion" invisible="not is_exclusion">
+                            <group string="Exclusion Reason">
+                                <field name="exclusion_reason" nolabel="1" placeholder="Explain why this item is excluded from coverage (e.g., Cosmetic, Over-the-counter, Experimental)"/>
+                            </group>
+                        </page>
+                        
+                        <page string="Rule Conditions" name="conditions">
+                            <group string="Advanced Conditions">
+                                <group>
+                                    <field name="age_min" help="Minimum patient age for this rule"/>
+                                    <field name="age_max" help="Maximum patient age for this rule"/>
+                                    <field name="gender" help="Apply rule only to specific gender"/>
+                                </group>
+                                <group>
+                                    <field name="diagnosis_codes" placeholder="ICD-10 codes" help="Required diagnosis codes for coverage"/>
+                                    <field name="notes" nolabel="1" placeholder="Additional conditions or special notes for this rule..."/>
+                                </group>
                             </group>
                         </page>
                     </notebook>

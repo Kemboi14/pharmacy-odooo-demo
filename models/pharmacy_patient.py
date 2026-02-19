@@ -1,355 +1,534 @@
 # -*- coding: utf-8 -*-
 
-from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError, UserError
 import logging
-from datetime import datetime, date
 import re
+from datetime import date, datetime
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
 
 class PharmacyPatient(models.Model):
-    _name = 'pharmacy.patient'
-    _description = 'Pharmacy Patient'
-    _order = 'name'
-    _rec_name = 'display_name'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
-    
-    name = fields.Char('Patient Name', required=True, tracking=True)
-    patient_code = fields.Char('Patient Code', required=True, copy=False, readonly=True,
-                               default=lambda self: _('New'), index=True)
-    display_name = fields.Char(compute='_compute_display_name', store=True)
-    
+    _name = "pharmacy.patient"
+    _description = "Pharmacy Patient"
+    _order = "name"
+    _rec_name = "display_name"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
+
+    name = fields.Char("Patient Name", required=True, tracking=True)
+    patient_code = fields.Char(
+        "Patient Code",
+        required=True,
+        copy=False,
+        readonly=True,
+        default=lambda self: _("New"),
+        index=True,
+    )
+    display_name = fields.Char(compute="_compute_display_name", store=True)
+
+    # Customer synchronization flag
+    auto_sync_customer = fields.Boolean(
+        "Auto-Sync with Customer",
+        default=True,
+        help="Automatically create/update customer record when patient information changes",
+    )
+
     # Personal information
-    date_of_birth = fields.Date('Date of Birth', tracking=True)
-    age = fields.Integer(compute='_compute_age', store=True)
-    gender = fields.Selection([
-        ('male', 'Male'),
-        ('female', 'Female'),
-        ('other', 'Other')
-    ], string='Gender', tracking=True)
-    
+    date_of_birth = fields.Date("Date of Birth", tracking=True)
+    age = fields.Integer(compute="_compute_age", store=True)
+    gender = fields.Selection(
+        [("male", "Male"), ("female", "Female"), ("other", "Other")],
+        string="Gender",
+        tracking=True,
+    )
+
     # Contact information
-    identification_number = fields.Char('ID/Passport Number', tracking=True, index=True)
-    phone = fields.Char('Phone', tracking=True, index=True)
-    email = fields.Char('Email')
-    
+    identification_number = fields.Char("ID/Passport Number", tracking=True, index=True)
+    phone = fields.Char("Phone", tracking=True, index=True)
+    email = fields.Char("Email")
+
     # Address
     street = fields.Char()
     street2 = fields.Char()
     city = fields.Char()
-    state_id = fields.Many2one('res.country.state', 'State')
-    zip = fields.Char('Zip')
-    country_id = fields.Many2one('res.country', 'Country')
-    
+    state_id = fields.Many2one("res.country.state", "State")
+    zip = fields.Char("Zip")
+    country_id = fields.Many2one("res.country", "Country")
+
     # Medical information
-    national_id = fields.Char('National ID', tracking=True, copy=False)
-    allergies = fields.Text('Allergies', tracking=True)
-    chronic_conditions = fields.Text('Chronic Conditions', tracking=True)
-    blood_group = fields.Selection([
-        ('a+', 'A+'), ('a-', 'A-'),
-        ('b+', 'B+'), ('b-', 'B-'),
-        ('ab+', 'AB+'), ('ab-', 'AB-'),
-        ('o+', 'O+'), ('o-', 'O-')
-    ], string='Blood Group')
-    
+    national_id = fields.Char("National ID", tracking=True, copy=False)
+    allergies = fields.Text("Allergies", tracking=True)
+    chronic_conditions = fields.Text("Chronic Conditions", tracking=True)
+    blood_group = fields.Selection(
+        [
+            ("a+", "A+"),
+            ("a-", "A-"),
+            ("b+", "B+"),
+            ("b-", "B-"),
+            ("ab+", "AB+"),
+            ("ab-", "AB-"),
+            ("o+", "O+"),
+            ("o-", "O-"),
+        ],
+        string="Blood Group",
+    )
+
     # Related records - Critical relationships
-    partner_id = fields.Many2one('res.partner', 'Linked Customer', tracking=True, 
-                                 help='The customer/partner record linked to this patient. A single customer can represent a patient.')
-    insurance_ids = fields.One2many('pharmacy.patient.insurance', 'patient_id', 'Insurance Policies',
-                                    help='List of insurance policies for this patient')
-    prescription_ids = fields.One2many('pharmacy.prescription', 'patient_id', 'Prescriptions')
-    dispensing_ids = fields.One2many('pharmacy.dispensing', 'patient_id', 'Dispensing Records')
-    
+    partner_id = fields.Many2one(
+        "res.partner",
+        "Linked Customer",
+        tracking=True,
+        help="The customer/partner record linked to this patient. A single customer can represent a patient.",
+        ondelete="restrict",
+    )
+    insurance_ids = fields.One2many(
+        "pharmacy.patient.insurance",
+        "patient_id",
+        "Insurance Policies",
+        help="List of insurance policies for this patient",
+    )
+    prescription_ids = fields.One2many(
+        "pharmacy.prescription", "patient_id", "Prescriptions"
+    )
+    dispensing_ids = fields.One2many(
+        "pharmacy.dispensing", "patient_id", "Dispensing Records"
+    )
+    pos_order_ids = fields.One2many(
+        "pos.order", "patient_id", "POS Orders", help="All POS orders for this patient"
+    )
+
     # Insurance summary fields for quick access
-    active_insurance_id = fields.Many2one('pharmacy.patient.insurance', 'Active Insurance', 
-                                         compute='_compute_active_insurance', store=True,
-                                         help='Currently active insurance policy')
-    
+    active_insurance_id = fields.Many2one(
+        "pharmacy.patient.insurance",
+        "Active Insurance",
+        compute="_compute_active_insurance",
+        store=True,
+        help="Currently active insurance policy",
+    )
+
     # Statistics
-    total_prescriptions = fields.Integer(compute='_compute_statistics', store=True)
-    total_dispensing = fields.Integer(compute='_compute_statistics', store=True)
-    last_visit_date = fields.Date(compute='_compute_statistics', store=True)
-    
-    active = fields.Boolean('Active', default=True, tracking=True)
-    company_id = fields.Many2one('res.company', 'Company', required=True,
-                                default=lambda self: self.env.company)
-    
-    @api.depends('name', 'patient_code')
+    total_prescriptions = fields.Integer(compute="_compute_statistics", store=True)
+    total_dispensing = fields.Integer(compute="_compute_statistics", store=True)
+    total_pos_orders = fields.Integer(compute="_compute_statistics", store=True)
+    total_insurance_claims = fields.Integer(compute="_compute_statistics", store=True)
+    last_visit_date = fields.Date(compute="_compute_statistics", store=True)
+    lifetime_value = fields.Monetary(
+        "Lifetime Value",
+        compute="_compute_statistics",
+        store=True,
+        currency_field="currency_id",
+    )
+    currency_id = fields.Many2one(
+        "res.currency", related="company_id.currency_id", readonly=True
+    )
+
+    active = fields.Boolean("Active", default=True, tracking=True)
+    company_id = fields.Many2one(
+        "res.company", "Company", required=True, default=lambda self: self.env.company
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Override create to auto-generate patient codes and sync with customers"""
+        for vals in vals_list:
+            if vals.get("patient_code", _("New")) == _("New"):
+                vals["patient_code"] = self.env["ir.sequence"].next_by_code(
+                    "pharmacy.patient"
+                ) or _("New")
+
+        patients = super(PharmacyPatient, self).create(vals_list)
+
+        # Auto-create or link customer records
+        for patient in patients:
+            if patient.auto_sync_customer and not patient.partner_id:
+                patient._sync_with_customer()
+
+        return patients
+
+    def write(self, vals):
+        """Override write to sync changes with customer"""
+        result = super(PharmacyPatient, self).write(vals)
+
+        # Sync with customer if relevant fields changed
+        sync_fields = [
+            "name",
+            "phone",
+            "email",
+            "street",
+            "street2",
+            "city",
+            "state_id",
+            "zip",
+            "country_id",
+        ]
+        if any(field in vals for field in sync_fields):
+            for patient in self:
+                if patient.auto_sync_customer and patient.partner_id:
+                    patient._sync_with_customer()
+
+        return result
+
+    def _sync_with_customer(self):
+        """Synchronize patient data with customer/partner record"""
+        self.ensure_one()
+
+        partner_vals = {
+            "name": self.name,
+            "phone": self.phone,
+            "email": self.email,
+            "street": self.street,
+            "street2": self.street2,
+            "city": self.city,
+            "state_id": self.state_id.id if self.state_id else False,
+            "zip": self.zip,
+            "country_id": self.country_id.id if self.country_id else False,
+            "is_patient": True,
+            "patient_id": self.id,
+            "comment": f"Patient Code: {self.patient_code}\n"
+            + (f"Allergies: {self.allergies}\n" if self.allergies else "")
+            + (
+                f"Chronic Conditions: {self.chronic_conditions}"
+                if self.chronic_conditions
+                else ""
+            ),
+        }
+
+        if self.partner_id:
+            # Update existing customer
+            self.partner_id.write(partner_vals)
+        else:
+            # Create new customer
+            partner_vals["company_id"] = self.company_id.id
+            partner = self.env["res.partner"].create(partner_vals)
+            self.partner_id = partner.id
+
+        return True
+
+    @api.depends("name", "patient_code")
     def _compute_display_name(self):
         for patient in self:
             patient.display_name = f"[{patient.patient_code}] {patient.name}"
-    
-    @api.depends('date_of_birth')
+
+    @api.depends("date_of_birth")
     def _compute_age(self):
         for patient in self:
             if patient.date_of_birth:
                 today = date.today()
-                patient.age = today.year - patient.date_of_birth.year - (
-                    (today.month, today.day) < (patient.date_of_birth.month, patient.date_of_birth.day)
+                patient.age = (
+                    today.year
+                    - patient.date_of_birth.year
+                    - (
+                        (today.month, today.day)
+                        < (patient.date_of_birth.month, patient.date_of_birth.day)
+                    )
                 )
             else:
                 patient.age = 0
-    
-    @api.depends('prescription_ids', 'dispensing_ids')
+
+    @api.depends("prescription_ids", "dispensing_ids")
     def _compute_statistics(self):
         for patient in self:
             patient.total_prescriptions = len(patient.prescription_ids)
             patient.total_dispensing = len(patient.dispensing_ids)
-            
+
             # Last visit date from dispensing records
-            dispensings = patient.dispensing_ids.sorted('dispensed_date', reverse=True)
-            patient.last_visit_date = dispensings[0].dispensed_date.date() if dispensings else False
-    
-    @api.depends('insurance_ids')
+            dispensings = patient.dispensing_ids.sorted("dispensed_date", reverse=True)
+            patient.last_visit_date = (
+                dispensings[0].dispensed_date.date() if dispensings else False
+            )
+
+    @api.depends("insurance_ids")
     def _compute_active_insurance(self):
         """Get the currently active insurance policy"""
         today = fields.Date.today()
         for patient in self:
             active_insurance = patient.insurance_ids.filtered(
-                lambda i: i.status == 'active' and i.valid_from <= today and i.valid_to >= today
+                lambda i: (
+                    i.status == "active"
+                    and i.valid_from <= today
+                    and i.valid_to >= today
+                )
             )
-            patient.active_insurance_id = active_insurance[0].id if active_insurance else False
-    
+            patient.active_insurance_id = (
+                active_insurance[0].id if active_insurance else False
+            )
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('patient_code', _('New')) == _('New'):
-                vals['patient_code'] = self._generate_patient_code()
-            
+            if vals.get("patient_code", _("New")) == _("New"):
+                vals["patient_code"] = self._generate_patient_code()
+
             # Encrypt national ID if provided
-            if vals.get('national_id'):
-                vals['national_id'] = self._encrypt_national_id(vals['national_id'])
-        
+            if vals.get("national_id"):
+                vals["national_id"] = self._encrypt_national_id(vals["national_id"])
+
         records = super().create(vals_list)
-        
+
         # Auto-create linked customer for each new patient
         for record in records:
             if not record.partner_id:
                 record._create_linked_customer()
-        
+
         return records
-    
+
     def write(self, vals):
         # Encrypt national ID if being updated
-        if vals.get('national_id'):
-            vals['national_id'] = self._encrypt_national_id(vals['national_id'])
-        
+        if vals.get("national_id"):
+            vals["national_id"] = self._encrypt_national_id(vals["national_id"])
+
         return super().write(vals)
-    
+
     def _generate_patient_code(self):
         """Generate unique patient code"""
-        sequence = self.env['ir.sequence'].next_by_code('pharmacy.patient') or _('New')
+        sequence = self.env["ir.sequence"].next_by_code("pharmacy.patient") or _("New")
         return f"PAT{sequence}"
-    
+
     def _encrypt_national_id(self, national_id):
         """Simple encryption for national ID (in production, use proper encryption)"""
         # This is a simple obfuscation - in production, use proper encryption
-        return ''.join(chr(ord(c) + 3) for c in national_id)
-    
+        return "".join(chr(ord(c) + 3) for c in national_id)
+
     def _decrypt_national_id(self, encrypted_id):
         """Decrypt national ID"""
-        return ''.join(chr(ord(c) - 3) for c in encrypted_id)
-    
+        return "".join(chr(ord(c) - 3) for c in encrypted_id)
+
     def get_display_national_id(self):
         """Get masked national ID for display"""
         if not self.national_id:
-            return ''
-        
+            return ""
+
         decrypted = self._decrypt_national_id(self.national_id)
         if len(decrypted) > 4:
             return f"****{decrypted[-4:]}"
         return decrypted
-    
-    @api.constrains('phone')
+
+    @api.constrains("phone")
     def _check_phone(self):
         for patient in self:
             if patient.phone:
                 # Basic phone validation for Kenyan numbers
-                phone_pattern = r'^(\+254|0)?[7]\d{8}$'
-                if not re.match(phone_pattern, patient.phone.replace(' ', '')):
-                    raise ValidationError(_('Invalid phone number format. Please use Kenyan format (e.g., +254712345678 or 0712345678)'))
-    
-    @api.constrains('email')
+                phone_pattern = r"^(\+254|0)?[7]\d{8}$"
+                if not re.match(phone_pattern, patient.phone.replace(" ", "")):
+                    raise ValidationError(
+                        _(
+                            "Invalid phone number format. Please use Kenyan format (e.g., +254712345678 or 0712345678)"
+                        )
+                    )
+
+    @api.constrains("email")
     def _check_email(self):
         for patient in self:
             if patient.email:
                 import re
-                email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+                email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                 if not re.match(email_pattern, patient.email):
-                    raise ValidationError(_('Invalid email address format'))
-    
+                    raise ValidationError(_("Invalid email address format"))
+
     def action_view_prescriptions(self):
-        """View patient prescriptions"""
+        """View all prescriptions for this patient"""
+        self.ensure_one()
         return {
-            'name': _('Prescriptions'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'pharmacy.prescription',
-            'view_mode': 'list,form',
-            'domain': [('patient_id', '=', self.id)],
-            'context': {'default_patient_id': self.id},
+            "name": _("Prescriptions for %s") % self.name,
+            "type": "ir.actions.act_window",
+            "res_model": "pharmacy.prescription",
+            "view_mode": "list,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {
+                "default_patient_id": self.id,
+                "default_partner_id": self.partner_id.id,
+            },
         }
-    
+
     def action_view_dispensing(self):
-        """View patient dispensing records"""
+        """View all dispensing records for this patient"""
+        self.ensure_one()
         return {
-            'name': _('Dispensing Records'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'pharmacy.dispensing',
-            'view_mode': 'list,form',
-            'domain': [('patient_id', '=', self.id)],
-            'context': {'default_patient_id': self.id},
+            "name": _("Dispensing Records for %s") % self.name,
+            "type": "ir.actions.act_window",
+            "res_model": "pharmacy.dispensing",
+            "view_mode": "list,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id},
         }
-    
+
     def action_view_insurance(self):
-        """View patient insurance policies"""
+        """View all insurance policies for this patient"""
+        self.ensure_one()
         return {
-            'name': _('Insurance Policies'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'pharmacy.patient.insurance',
-            'view_mode': 'list,form',
-            'domain': [('patient_id', '=', self.id)],
-            'context': {'default_patient_id': self.id},
+            "name": _("Insurance Policies for %s") % self.name,
+            "type": "ir.actions.act_window",
+            "res_model": "pharmacy.patient.insurance",
+            "view_mode": "list,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id},
         }
-    
+
     def get_active_insurance(self):
         """Get currently active insurance policy"""
         today = fields.Date.today()
-        return self.insurance_ids.filtered(lambda i: i.status == 'active' and 
-                                          i.valid_from <= today and i.valid_to >= today)[:1]
-    
+        return self.insurance_ids.filtered(
+            lambda i: (
+                i.status == "active" and i.valid_from <= today and i.valid_to >= today
+            )
+        )[:1]
+
     def check_allergy_conflict(self, product_ids):
         """Check if any products conflict with patient allergies"""
         if not self.allergies:
             return []
-        
+
         conflicting_products = []
-        allergy_list = [allergy.strip().lower() for allergy in self.allergies.split(',')]
-        
-        for product in self.env['product.product'].browse(product_ids):
+        allergy_list = [
+            allergy.strip().lower() for allergy in self.allergies.split(",")
+        ]
+
+        for product in self.env["product.product"].browse(product_ids):
             # Check product name, generic name, and category
             product_text = f"{product.name} {product.generic_name or ''} {product.categ_id.name or ''}".lower()
-            
+
             for allergy in allergy_list:
                 if allergy and allergy in product_text:
                     conflicting_products.append(product)
                     break
-        
+
         return conflicting_products
-    
+
     @api.model
     def search_by_phone_or_code(self, search_term):
         """Search patient by phone number or patient code"""
-        return self.search([
-            '|', '|',
-            ('phone', 'ilike', search_term),
-            ('patient_code', '=', search_term),
-            ('name', 'ilike', search_term)
-        ], limit=10)
+        return self.search(
+            [
+                "|",
+                "|",
+                ("phone", "ilike", search_term),
+                ("patient_code", "=", search_term),
+                ("name", "ilike", search_term),
+            ],
+            limit=10,
+        )
 
     def _create_linked_customer(self):
         """Internal method to create linked res.partner"""
         for patient in self:
             if patient.partner_id:
                 continue
-            
+
             partner_vals = {
-                'name': patient.name,
-                'phone': patient.phone or '',
-                'email': patient.email or '',
-                'street': patient.street or '',
-                'street2': patient.street2 or '',
-                'city': patient.city or '',
-                'state_id': patient.state_id.id if patient.state_id else False,
-                'zip': patient.zip or '',
-                'country_id': patient.country_id.id if patient.country_id else False,
-                'customer_rank': 1,  # Mark as customer
-                'is_company': False,
-                'type': 'invoice',
+                "name": patient.name,
+                "phone": patient.phone or "",
+                "email": patient.email or "",
+                "street": patient.street or "",
+                "street2": patient.street2 or "",
+                "city": patient.city or "",
+                "state_id": patient.state_id.id if patient.state_id else False,
+                "zip": patient.zip or "",
+                "country_id": patient.country_id.id if patient.country_id else False,
+                "customer_rank": 1,  # Mark as customer
+                "is_company": False,
+                "type": "invoice",
             }
-            
+
             # Create the customer
-            partner = self.env['res.partner'].create(partner_vals)
+            partner = self.env["res.partner"].create(partner_vals)
             patient.partner_id = partner.id
-            
+
             # Link the patient to the partner
             partner.pharmacy_patient_id = patient.id
-            
-            _logger.info(f"Created customer {partner.name} for patient {patient.patient_code}")
+
+            _logger.info(
+                f"Created customer {partner.name} for patient {patient.patient_code}"
+            )
 
     def action_sync_to_customer(self):
         """Create or update linked res.partner (with bidirectional sync)"""
         for patient in self:
             partner_vals = {
-                'name': patient.name,
-                'phone': patient.phone or '',
-                'email': patient.email or '',
-                'street': patient.street or '',
-                'street2': patient.street2 or '',
-                'city': patient.city or '',
-                'state_id': patient.state_id.id if patient.state_id else False,
-                'zip': patient.zip or '',
-                'country_id': patient.country_id.id if patient.country_id else False,
-                'customer_rank': 1,
-                'is_company': False,
-                'type': 'invoice',
+                "name": patient.name,
+                "phone": patient.phone or "",
+                "email": patient.email or "",
+                "street": patient.street or "",
+                "street2": patient.street2 or "",
+                "city": patient.city or "",
+                "state_id": patient.state_id.id if patient.state_id else False,
+                "zip": patient.zip or "",
+                "country_id": patient.country_id.id if patient.country_id else False,
+                "customer_rank": 1,
+                "is_company": False,
+                "type": "invoice",
             }
-            
+
             if patient.partner_id:
                 patient.partner_id.write(partner_vals)
-                _logger.info(f"Updated customer {patient.partner_id.name} from patient {patient.patient_code}")
+                _logger.info(
+                    f"Updated customer {patient.partner_id.name} from patient {patient.patient_code}"
+                )
             else:
-                partner = self.env['res.partner'].create(partner_vals)
+                partner = self.env["res.partner"].create(partner_vals)
                 patient.partner_id = partner.id
                 partner.pharmacy_patient_id = patient.id
-                _logger.info(f"Created customer {partner.name} for patient {patient.patient_code}")
-        
+                _logger.info(
+                    f"Created customer {partner.name} for patient {patient.patient_code}"
+                )
+
         return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Success'),
-                'message': _('Customer records synchronized successfully'),
-                'sticky': False,
-            }
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Success"),
+                "message": _("Customer records synchronized successfully"),
+                "sticky": False,
+            },
         }
 
     def get_patient_with_insurance(self):
         """Get patient data with active insurance details"""
         self.ensure_one()
         return {
-            'patient': {
-                'id': self.id,
-                'code': self.patient_code,
-                'name': self.name,
-                'phone': self.phone,
-                'email': self.email,
-                'date_of_birth': self.date_of_birth,
-                'age': self.age,
-                'allergies': self.allergies,
+            "patient": {
+                "id": self.id,
+                "code": self.patient_code,
+                "name": self.name,
+                "phone": self.phone,
+                "email": self.email,
+                "date_of_birth": self.date_of_birth,
+                "age": self.age,
+                "allergies": self.allergies,
             },
-            'customer': {
-                'id': self.partner_id.id if self.partner_id else False,
-                'name': self.partner_id.name if self.partner_id else False,
-                'phone': self.partner_id.phone if self.partner_id else False,
+            "customer": {
+                "id": self.partner_id.id if self.partner_id else False,
+                "name": self.partner_id.name if self.partner_id else False,
+                "phone": self.partner_id.phone if self.partner_id else False,
             },
-            'active_insurance': {
-                'id': self.active_insurance_id.id if self.active_insurance_id else False,
-                'insurer': self.active_insurance_id.insurer_id.name if self.active_insurance_id else False,
-                'member_number': self.active_insurance_id.member_number if self.active_insurance_id else False,
-                'coverage_percentage': self.active_insurance_id.coverage_percentage if self.active_insurance_id else 0.0,
-                'copay_percentage': self.active_insurance_id.copay_percentage if self.active_insurance_id else 0.0,
+            "active_insurance": {
+                "id": self.active_insurance_id.id
+                if self.active_insurance_id
+                else False,
+                "insurer": self.active_insurance_id.insurer_id.name
+                if self.active_insurance_id
+                else False,
+                "member_number": self.active_insurance_id.member_number
+                if self.active_insurance_id
+                else False,
+                "coverage_percentage": self.active_insurance_id.coverage_percentage
+                if self.active_insurance_id
+                else 0.0,
+                "copay_percentage": self.active_insurance_id.copay_percentage
+                if self.active_insurance_id
+                else 0.0,
             },
-            'all_insurance': [
+            "all_insurance": [
                 {
-                    'id': ins.id,
-                    'insurer': ins.insurer_id.name,
-                    'member_number': ins.member_number,
-                    'status': ins.status,
-                    'valid_from': str(ins.valid_from),
-                    'valid_to': str(ins.valid_to),
+                    "id": ins.id,
+                    "insurer": ins.insurer_id.name,
+                    "member_number": ins.member_number,
+                    "status": ins.status,
+                    "valid_from": str(ins.valid_from),
+                    "valid_to": str(ins.valid_to),
                 }
                 for ins in self.insurance_ids
-            ]
+            ],
         }

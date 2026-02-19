@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
-        
+
         <!-- Demo Data for Pharmacy Management System -->
-        
+
         <!-- Demo Pharmacy Branches -->
         <record id="demo_branch_main" model="pharmacy.branch">
             <field name="name">Main Pharmacy</field>
@@ -15,7 +15,7 @@
             <field name="email">main@pharmacy.demo</field>
             <field name="active">True</field>
         </record>
-        
+
         <record id="demo_branch_branch2" model="pharmacy.branch">
             <field name="name">Westlands Pharmacy</field>
             <field name="code">WST002</field>
@@ -26,7 +26,7 @@
             <field name="email">westlands@pharmacy.demo</field>
             <field name="active">True</field>
         </record>
-        
+
         <!-- Demo Dosage Forms -->
         <record id="demo_dosage_tablet" model="pharmacy.dosage.form">
             <field name="name">Tablet</field>
@@ -35,7 +35,7 @@
             <field name="oral">True</field>
             <field name="active">True</field>
         </record>
-        
+
         <record id="demo_dosage_capsule" model="pharmacy.dosage.form">
             <field name="name">Capsule</field>
             <field name="display_name">Capsule</field>
@@ -43,7 +43,7 @@
             <field name="oral">True</field>
             <field name="active">True</field>
         </record>
-        
+
         <record id="demo_dosage_syrup" model="pharmacy.dosage.form">
             <field name="name">Syrup</field>
             <field name="display_name">Syrup</field>
@@ -51,7 +51,7 @@
             <field name="oral">True</field>
             <field name="active">True</field>
         </record>
-        
+
         <record id="demo_dosage_injection" model="pharmacy.dosage.form">
             <field name="name">Injection</field>
             <field name="display_name">Injection</field>
@@ -60,7 +60,7 @@
             <field name="oral">False</field>
             <field name="active">True</field>
         </record>
-        
+
         <!-- Demo Discount Rules -->
         <record id="demo_discount_pharmacist" model="pharmacy.discount.rule">
             <field name="name">Pharmacist Discount</field>
@@ -70,7 +70,7 @@
             <field name="approval_threshold">1000.0</field>
             <field name="active">True</field>
         </record>
-        
+
         <record id="demo_discount_technician" model="pharmacy.discount.rule">
             <field name="name">Technician Discount</field>
             <field name="max_discount_percent">10.0</field>
@@ -93,7 +93,7 @@
         <!-- Demo Products (OTC / RX / Controlled) -->
         <record id="demo_product_paracetamol_tmpl" model="product.template">
             <field name="name">Paracetamol 500mg Tablets</field>
-            <field name="type">product</field>
+            <field name="type">consu</field>
             <field name="sale_ok">True</field>
             <field name="purchase_ok">True</field>
             <field name="available_in_pos">True</field>
@@ -109,7 +109,7 @@
             <field name="is_prescription_required">False</field>
             <field name="is_controlled_substance">False</field>
             <field name="min_expiry_days">30</field>
-            <field name="seller_ids" eval="[(0, 0, {'name': ref('demo_partner_supplier_1'), 'min_qty': 1.0, 'price': 15.0})]"/>
+            <field name="seller_ids" eval="[(0, 0, {'partner_id': ref('demo_partner_supplier_1'), 'min_qty': 1.0, 'price': 15.0})]"/>
         </record>
 
         <record id="demo_product_paracetamol" model="product.product">
@@ -118,7 +118,7 @@
 
         <record id="demo_product_amoxicillin_tmpl" model="product.template">
             <field name="name">Amoxicillin 500mg Capsules</field>
-            <field name="type">product</field>
+            <field name="type">consu</field>
             <field name="sale_ok">True</field>
             <field name="purchase_ok">True</field>
             <field name="available_in_pos">True</field>
@@ -142,7 +142,7 @@
 
         <record id="demo_product_diazepam_tmpl" model="product.template">
             <field name="name">Diazepam 5mg Tablets (Controlled)</field>
-            <field name="type">product</field>
+            <field name="type">consu</field>
             <field name="sale_ok">True</field>
             <field name="purchase_ok">True</field>
             <field name="available_in_pos">True</field>
@@ -312,6 +312,6 @@
             <field name="branch_id" ref="demo_branch_branch2"/>
             <field name="dispensed_by" ref="base.user_admin"/>
         </record>
-        
+
     </data>
 </odoo>
