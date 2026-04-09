@@ -67,17 +67,39 @@ def post_init_hook(env):
         if rec:
             non_cash_methods.append(rec)
 
-    cash_journal = _get_xmlid("Pharmacy.pharmacy_cash_journal")
     PaymentMethod = env["pos.payment.method"]
 
     for config in env["pos.config"].search([("is_pharmacy_pos", "=", True)]):
         # Check if this config already has a cash payment method
         existing_cash = config.payment_method_ids.filtered(lambda m: m.is_cash_count)
         if not existing_cash:
+            # Each cash payment method needs its own journal in Odoo 18
+            # Use a unique code based on branch name initials
+            code_suffix = ''.join(c for c in config.name if c.isupper())[:3] or str(config.id)
+            journal_code = f"PC{code_suffix}"
+            # Ensure unique code
+            existing_journal = env["account.journal"].search([
+                ("code", "=", journal_code), ("company_id", "=", config.company_id.id)
+            ], limit=1)
+            if existing_journal:
+                journal_code = f"PC{config.id}"
+                existing_journal = env["account.journal"].search([
+                    ("code", "=", journal_code), ("company_id", "=", config.company_id.id)
+                ], limit=1)
+            if existing_journal:
+                per_pos_cash_journal = existing_journal
+            else:
+                cash_journal_vals = {
+                    "name": f"{config.name} Cash Journal",
+                    "type": "cash",
+                    "company_id": config.company_id.id,
+                    "code": journal_code,
+                }
+                per_pos_cash_journal = env["account.journal"].create(cash_journal_vals)
             cash_pm = PaymentMethod.create({
                 "name": f"{config.name} Cash",
                 "is_cash_count": True,
-                "journal_id": cash_journal.id if cash_journal else False,
+                "journal_id": per_pos_cash_journal.id,
                 "company_id": config.company_id.id,
             })
         else:
@@ -154,10 +176,16 @@ def post_init_hook(env):
         )
         session.action_pos_session_open()
 
+        price = demo_products["paracetamol"].lst_price
+        line_total = price * 2
         order_vals = {
             "session_id": session.id,
             "branch_id": config.branch_id.id,
             "pos_reference": ref,
+            "amount_tax": 0.0,
+            "amount_total": line_total,
+            "amount_paid": 0.0,
+            "amount_return": 0.0,
             "lines": [
                 (
                     0,
@@ -165,8 +193,9 @@ def post_init_hook(env):
                     {
                         "product_id": demo_products["paracetamol"].id,
                         "qty": 2,
-                        "price_unit": demo_products["paracetamol"].lst_price,
-                        "lot_id": demo_lots["para"].id,
+                        "price_unit": price,
+                        "price_subtotal": line_total,
+                        "price_subtotal_incl": line_total,
                     },
                 )
             ],
@@ -209,19 +238,22 @@ def post_init_hook(env):
         return order
 
     # Create orders only for Westlands branch (code: WST002)
-    westlands_branch = env["pharmacy.branch"].search([("code", "=", "WST002")], limit=1)
-    if westlands_branch:
-        pos_config = env["pos.config"].search(
-            [("is_pharmacy_pos", "=", True), ("branch_id", "=", westlands_branch.id)],
-            limit=1,
-        )
-
-        if pos_config and demo_products["paracetamol"] and demo_lots["para"]:
-            _ensure_demo_pos_order(
-                "PHARM-DEMO-CASH-001", pos_config, is_insurance=False
+    try:
+        westlands_branch = env["pharmacy.branch"].search([("code", "=", "WST002")], limit=1)
+        if westlands_branch:
+            pos_config = env["pos.config"].search(
+                [("is_pharmacy_pos", "=", True), ("branch_id", "=", westlands_branch.id)],
+                limit=1,
             )
-            _ensure_demo_pos_order("PHARM-DEMO-INS-001", pos_config, is_insurance=True)
-    else:
-        _logger.warning(
-            "Westlands branch (WST002) not found. Skipping demo POS order creation."
-        )
+
+            if pos_config and demo_products["paracetamol"] and demo_lots["para"]:
+                _ensure_demo_pos_order(
+                    "PHARM-DEMO-CASH-001", pos_config, is_insurance=False
+                )
+                _ensure_demo_pos_order("PHARM-DEMO-INS-001", pos_config, is_insurance=True)
+        else:
+            _logger.warning(
+                "Westlands branch (WST002) not found. Skipping demo POS order creation."
+            )
+    except Exception as e:
+        _logger.warning("Could not create demo POS orders: %s", e)

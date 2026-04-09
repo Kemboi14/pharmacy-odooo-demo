@@ -57,9 +57,10 @@
         </record>
 
         <!-- Demo Products (OTC / RX / Controlled) -->
-        <record id="demo_product_paracetamol_tmpl" model="product.template">
+        <record id="demo_product_paracetamol" model="product.product">
             <field name="name">Paracetamol 500mg Tablets</field>
             <field name="type">consu</field>
+            <field name="is_storable">True</field>
             <field name="tracking">lot</field>
             <field name="sale_ok">True</field>
             <field name="purchase_ok">True</field>
@@ -79,13 +80,10 @@
             <field name="seller_ids" eval="[(0, 0, {'partner_id': ref('demo_partner_supplier_1'), 'min_qty': 1.0, 'price': 15.0})]"/>
         </record>
 
-        <record id="demo_product_paracetamol" model="product.product">
-            <field name="product_tmpl_id" ref="demo_product_paracetamol_tmpl"/>
-        </record>
-
-        <record id="demo_product_amoxicillin_tmpl" model="product.template">
+        <record id="demo_product_amoxicillin" model="product.product">
             <field name="name">Amoxicillin 500mg Capsules</field>
             <field name="type">consu</field>
+            <field name="is_storable">True</field>
             <field name="tracking">lot</field>
             <field name="sale_ok">True</field>
             <field name="purchase_ok">True</field>
@@ -104,13 +102,10 @@
             <field name="min_expiry_days">45</field>
         </record>
 
-        <record id="demo_product_amoxicillin" model="product.product">
-            <field name="product_tmpl_id" ref="demo_product_amoxicillin_tmpl"/>
-        </record>
-
-        <record id="demo_product_diazepam_tmpl" model="product.template">
+        <record id="demo_product_diazepam" model="product.product">
             <field name="name">Diazepam 5mg Tablets (Controlled)</field>
             <field name="type">consu</field>
+            <field name="is_storable">True</field>
             <field name="tracking">lot</field>
             <field name="sale_ok">True</field>
             <field name="purchase_ok">True</field>
@@ -130,10 +125,6 @@
             <field name="requires_pharmacist_approval">True</field>
             <field name="requires_id_capture">True</field>
             <field name="min_expiry_days">60</field>
-        </record>
-
-        <record id="demo_product_diazepam" model="product.product">
-            <field name="product_tmpl_id" ref="demo_product_diazepam_tmpl"/>
         </record>
 
         <!-- Demo Lots (expiry tracking) -->
@@ -257,7 +248,6 @@
             <field name="prescription_id" ref="demo_rx_1"/>
             <field name="prescription_line_id" ref="demo_rx_1_line_1"/>
             <field name="product_id" ref="demo_product_amoxicillin"/>
-            <field name="lot_id" ref="demo_lot_amox_2026"/>
             <field name="quantity">10</field>
             <field name="branch_id" ref="demo_branch_main"/>
             <field name="dosage_instructions">Take 1 capsule three times a day after meals</field>
@@ -268,7 +258,6 @@
             <field name="date">2026-02-06</field>
             <field name="time">10:15:00</field>
             <field name="product_id" ref="demo_product_diazepam"/>
-            <field name="lot_id" ref="demo_lot_diaz_2026"/>
             <field name="quantity">2</field>
             <field name="patient_id" ref="demo_patient_2"/>
             <field name="patient_name">Brian Otieno</field>

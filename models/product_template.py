@@ -346,7 +346,7 @@ class ProductTemplate(models.Model):
     def _compute_dosage_form(self):
         for template in self:
             if template.dosage_form_id:
-                template.dosage_form = template.dosage_form_id.name
+                template.dosage_form = template.dosage_form_id.name.lower()
             else:
                 template.dosage_form = False
 
