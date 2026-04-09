@@ -175,7 +175,7 @@ class PosOrder(models.Model):
                             "lot_id": line.lot_id.id,
                             "quantity": line.qty,
                             "branch_id": self.branch_id.id,
-                            "dispensed_by": self.user_id,
+                            "dispensed_by": self.user_id.id,
                         }
                     )
         else:
@@ -205,7 +205,7 @@ class PosOrder(models.Model):
                                     "lot_id": line.lot_id.id,
                                     "quantity": line.qty,
                                     "branch_id": self.branch_id.id,
-                                    "dispensed_by": self.user_id,
+                                    "dispensed_by": self.user_id.id,
                                 }
                             )
                         else:
