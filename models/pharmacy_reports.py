@@ -116,7 +116,7 @@ class ReportPharmacyStockMovement(models.Model):
     _name = "report.pharmacy.stock.movement"
     _description = "Stock Movement Analysis"
     _auto = False
-    _order = "movement_category desc, total_sold_30d desc"
+    _order = "movement_category desc, qty_sold_30d desc"
 
     branch_id = fields.Many2one("pharmacy.branch", "Branch")
     product_id = fields.Many2one("product.product", "Product")
