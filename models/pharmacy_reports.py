@@ -99,8 +99,8 @@ class ReportPharmacyExpiry(models.Model):
                     0 as days_to_expiry,
                     'unknown' as expiry_bucket,
                     sq.quantity,
-                    sq.quantity * pp.standard_price::numeric as value,
-                    pt.name as product_name,
+                    sq.quantity * COALESCE((pp.standard_price->>'en_US')::numeric, 0) as value,
+                    pt.name->>'en_US' as product_name,
                     NULL::text as generic_name
                 FROM stock_quant sq
                 INNER JOIN product_product pp ON sq.product_id = pp.id
@@ -185,7 +185,7 @@ class ReportPharmacyStockMovement(models.Model):
                         WHEN COALESCE(st.current_stock, 0) / (COALESCE(sd.qty_sold_30d, 0) / 30) < 45 THEN 'medium'
                         ELSE 'slow'
                     END as movement_category,
-                    pt.name as product_name
+                    pt.name->>'en_US' as product_name
                 FROM sales_data sd
                 FULL OUTER JOIN stock_data st ON st.product_id = sd.product_id
                 INNER JOIN product_product pp ON COALESCE(st.product_id, sd.product_id) = pp.id
@@ -283,19 +283,17 @@ class ReportPharmacyBranchPnl(models.Model):
                     SUM(po.amount_total) AS total_revenue,
                     SUM(
                         COALESCE((
-                            SELECT SUM(pol.qty * CAST(pp.standard_price AS numeric))
+                            SELECT SUM(pol.qty * COALESCE((pp.standard_price->>'en_US')::numeric, 0))
                             FROM pos_order_line pol
                             JOIN product_product pp ON pol.product_id = pp.id
-                            JOIN product_template pt ON pp.product_tmpl_id = pt.id
                             WHERE pol.order_id = po.id
                         ), 0)
                     ) AS cogs,
                     SUM(po.amount_total) - SUM(
                         COALESCE((
-                            SELECT SUM(pol.qty * CAST(pp.standard_price AS numeric))
+                            SELECT SUM(pol.qty * COALESCE((pp.standard_price->>'en_US')::numeric, 0))
                             FROM pos_order_line pol
                             JOIN product_product pp ON pol.product_id = pp.id
-                            JOIN product_template pt ON pp.product_tmpl_id = pt.id
                             WHERE pol.order_id = po.id
                         ), 0)
                     ) AS gross_profit,
@@ -303,10 +301,9 @@ class ReportPharmacyBranchPnl(models.Model):
                         WHEN SUM(po.amount_total) > 0 THEN
                             (SUM(po.amount_total) - SUM(
                                 COALESCE((
-                                    SELECT SUM(pol.qty * CAST(pp.standard_price AS numeric))
+                                    SELECT SUM(pol.qty * COALESCE((pp.standard_price->>'en_US')::numeric, 0))
                                     FROM pos_order_line pol
                                     JOIN product_product pp ON pol.product_id = pp.id
-                                    JOIN product_template pt ON pp.product_tmpl_id = pt.id
                                     WHERE pol.order_id = po.id
                                 ), 0)
                             )) / SUM(po.amount_total) * 100
@@ -315,10 +312,9 @@ class ReportPharmacyBranchPnl(models.Model):
                     0 AS total_expenses,
                     SUM(po.amount_total) - SUM(
                         COALESCE((
-                            SELECT SUM(pol.qty * CAST(pp.standard_price AS numeric))
+                            SELECT SUM(pol.qty * COALESCE((pp.standard_price->>'en_US')::numeric, 0))
                             FROM pos_order_line pol
                             JOIN product_product pp ON pol.product_id = pp.id
-                            JOIN product_template pt ON pp.product_tmpl_id = pt.id
                             WHERE pol.order_id = po.id
                         ), 0)
                     ) AS net_profit,
@@ -326,10 +322,9 @@ class ReportPharmacyBranchPnl(models.Model):
                         WHEN SUM(po.amount_total) > 0 THEN
                             (SUM(po.amount_total) - SUM(
                                 COALESCE((
-                                    SELECT SUM(pol.qty * CAST(pp.standard_price AS numeric))
+                                    SELECT SUM(pol.qty * COALESCE((pp.standard_price->>'en_US')::numeric, 0))
                                     FROM pos_order_line pol
                                     JOIN product_product pp ON pol.product_id = pp.id
-                                    JOIN product_template pt ON pp.product_tmpl_id = pt.id
                                     WHERE pol.order_id = po.id
                                 ), 0)
                             )) / SUM(po.amount_total) * 100
