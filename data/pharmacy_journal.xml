@@ -6,7 +6,6 @@
             <field name="name">Pharmacy Cash</field>
             <field name="code">PHC</field>
             <field name="type">cash</field>
-            <field name="currency_id" ref="base.KES"/>
         </record>
 
         <!-- Pharmacy-specific Bank Journal for M-Pesa -->
@@ -14,7 +13,6 @@
             <field name="name">Pharmacy M-Pesa</field>
             <field name="code">PMP</field>
             <field name="type">bank</field>
-            <field name="currency_id" ref="base.KES"/>
         </record>
 
         <!-- Pharmacy-specific Card Journal -->
@@ -22,7 +20,6 @@
             <field name="name">Pharmacy Card</field>
             <field name="code">PCD</field>
             <field name="type">bank</field>
-            <field name="currency_id" ref="base.KES"/>
         </record>
     </data>
 </odoo>

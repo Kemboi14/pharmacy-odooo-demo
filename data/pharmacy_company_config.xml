@@ -7,7 +7,7 @@
         <!-- Company Configuration Update -->
         <record id="base.main_company" model="res.company">
             <field name="country_id" ref="base.ke"/>
-            <!-- <field name="currency_id" ref="base.KES"/> -->
+            <field name="currency_id" ref="base.KES"/>
             <field name="phone">+254-20-123456</field>
             <field name="email">info@pharmacy.co.ke</field>
             <field name="website">https://www.pharmacy.co.ke</field>

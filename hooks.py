@@ -7,8 +7,7 @@ from odoo import SUPERUSER_ID, api
 _logger = logging.getLogger(__name__)
 
 
-def post_init_hook(cr, registry):
-    env = api.Environment(cr, SUPERUSER_ID, {})
+def post_init_hook(env):
 
     # Ensure branch default structures exist (journals/locations). The model's
     # create() already does this for new branches, but for existing branches or
