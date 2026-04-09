@@ -27,6 +27,7 @@
         <menuitem id="menu_pharmacy_insurance" name="Insurance" parent="menu_pharmacy_root" sequence="40"/>
         <menuitem id="menu_pharmacy_insurers" name="Insurance Companies" parent="menu_pharmacy_insurance" sequence="10"/>
         <menuitem id="menu_pharmacy_insurer_list" name="Insurance Companies" parent="menu_pharmacy_insurers" action="action_pharmacy_insurer" sequence="10"/>
+        <menuitem id="menu_pharmacy_insurer_plan_list" name="Insurance Plans" parent="menu_pharmacy_insurers" action="action_pharmacy_insurer_plan" sequence="20"/>
         <menuitem id="menu_pharmacy_claims" name="Claims" parent="menu_pharmacy_insurance" sequence="20"/>
         <menuitem id="menu_pharmacy_coverage_rule" name="Coverage Rules" parent="menu_pharmacy_insurance" action="action_pharmacy_coverage_rule" sequence="30"/>
         

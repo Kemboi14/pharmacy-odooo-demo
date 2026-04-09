@@ -285,18 +285,5 @@
             </field>
         </record>
         
-        <!-- Menu Items -->
-        <menuitem id="menu_pharmacy_insurer_list" 
-                  name="Insurance Companies" 
-                  parent="menu_pharmacy_insurers" 
-                  action="action_pharmacy_insurer" 
-                  sequence="10"/>
-        
-        <menuitem id="menu_pharmacy_insurer_plan_list" 
-                  name="Insurance Plans" 
-                  parent="menu_pharmacy_insurers" 
-                  action="action_pharmacy_insurer_plan" 
-                  sequence="20"/>
-        
     </data>
 </odoo>

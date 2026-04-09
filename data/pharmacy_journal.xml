@@ -5,7 +5,7 @@
         <record id="pharmacy_cash_journal" model="account.journal">
             <field name="name">Pharmacy Cash</field>
             <field name="code">PHC</field>
-            <!-- <field name="type">cash</field> -->
+            <field name="type">cash</field>
             <field name="currency_id" ref="base.KES"/>
         </record>
 
@@ -13,7 +13,7 @@
         <record id="pharmacy_mpesa_journal" model="account.journal">
             <field name="name">Pharmacy M-Pesa</field>
             <field name="code">PMP</field>
-            <!-- <field name="type">bank</field> -->
+            <field name="type">bank</field>
             <field name="currency_id" ref="base.KES"/>
         </record>
 
@@ -21,7 +21,7 @@
         <record id="pharmacy_card_journal" model="account.journal">
             <field name="name">Pharmacy Card</field>
             <field name="code">PCD</field>
-            <!-- <field name="type">bank</field> -->
+            <field name="type">bank</field>
             <field name="currency_id" ref="base.KES"/>
         </record>
     </data>

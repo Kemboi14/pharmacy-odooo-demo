@@ -64,33 +64,33 @@
         
         <!-- Default Dosage Forms -->
         <record id="dosage_form_tablet" model="pharmacy.dosage.form">
-            <field name="name">tablet</field>
-            <field name="display_name">Tablet</field>
+            <field name="name">Tablet</field>
+            <field name="code">TAB</field>
         </record>
         
         <record id="dosage_form_capsule" model="pharmacy.dosage.form">
-            <field name="name">capsule</field>
-            <field name="display_name">Capsule</field>
+            <field name="name">Capsule</field>
+            <field name="code">CAP</field>
         </record>
         
         <record id="dosage_form_syrup" model="pharmacy.dosage.form">
-            <field name="name">syrup</field>
-            <field name="display_name">Syrup</field>
+            <field name="name">Syrup</field>
+            <field name="code">SYR</field>
         </record>
         
         <record id="dosage_form_injection" model="pharmacy.dosage.form">
-            <field name="name">injection</field>
-            <field name="display_name">Injection</field>
+            <field name="name">Injection</field>
+            <field name="code">INJ</field>
         </record>
         
         <record id="dosage_form_cream" model="pharmacy.dosage.form">
-            <field name="name">cream</field>
-            <field name="display_name">Cream</field>
+            <field name="name">Cream</field>
+            <field name="code">CRM</field>
         </record>
         
         <record id="dosage_form_drops" model="pharmacy.dosage.form">
-            <field name="name">drops</field>
-            <field name="display_name">Drops</field>
+            <field name="name">Drops</field>
+            <field name="code">DRP</field>
         </record>
         
         <!-- Sample Insurance Companies (Kenyan Market) -->
