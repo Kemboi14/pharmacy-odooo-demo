@@ -9,6 +9,19 @@ _logger = logging.getLogger(__name__)
 
 def post_init_hook(env):
 
+    # Set company country and currency to Kenya / KES
+    company = env.ref('base.main_company', raise_if_not_found=False)
+    kes = env.ref('base.KES', raise_if_not_found=False)
+    ke = env.ref('base.ke', raise_if_not_found=False)
+    if company:
+        if ke and company.country_id != ke:
+            company.country_id = ke
+        if kes and company.currency_id != kes:
+            try:
+                company.currency_id = kes
+            except Exception:
+                _logger.warning('Could not set company currency to KES (journal items may already exist).')
+
     # Ensure branch default structures exist (journals/locations). The model's
     # create() already does this for new branches, but for existing branches or
     # upgrades we re-run idempotent initializers.
@@ -31,6 +44,7 @@ def post_init_hook(env):
                 "allow_insurance_sales": True,
                 "require_prescription_for_rx": True,
                 "enforce_fefo": True,
+                "payment_method_ids": [(5, 0, 0)],  # prevent auto-assign of cash
             }
         )
 
@@ -41,7 +55,7 @@ def post_init_hook(env):
         try:
             return env.ref(xmlid)
         except Exception:
-            return env[None]
+            return None
 
     non_cash_methods = []
     for xmlid in [
@@ -75,7 +89,23 @@ def post_init_hook(env):
 
     # Put demo stock on hand in each branch shop-floor location so that FEFO / expiry
     # dashboards work immediately.
-    # We use stock.quant inventory adjustment fields which are stable in Odoo.
+    # Demo data is only available when pharmacy_demo.xml is loaded in manifest 'demo'.
+    demo_products = {
+        "paracetamol": _get_xmlid("Pharmacy.demo_product_paracetamol"),
+        "amoxicillin": _get_xmlid("Pharmacy.demo_product_amoxicillin"),
+        "diazepam": _get_xmlid("Pharmacy.demo_product_diazepam"),
+    }
+    demo_lots = {
+        "para": _get_xmlid("Pharmacy.demo_lot_para_2027"),
+        "amox": _get_xmlid("Pharmacy.demo_lot_amox_2026"),
+        "diaz": _get_xmlid("Pharmacy.demo_lot_diaz_2026"),
+    }
+
+    has_demo = all(demo_products.values()) and all(demo_lots.values())
+    if not has_demo:
+        _logger.info("Demo data not loaded (pharmacy_demo.xml not in manifest). Skipping demo stock/orders.")
+        return
+
     def _set_quant(location, product, lot, qty):
         Quant = env["stock.quant"]
         quant = Quant.search(
@@ -94,20 +124,8 @@ def post_init_hook(env):
                     "lot_id": lot.id,
                 }
             )
-        # Idempotent: always enforce the desired on-hand quantity.
         quant.inventory_quantity = qty
         quant.action_apply_inventory()
-
-    demo_products = {
-        "paracetamol": _get_xmlid("Pharmacy.demo_product_paracetamol"),
-        "amoxicillin": _get_xmlid("Pharmacy.demo_product_amoxicillin"),
-        "diazepam": _get_xmlid("Pharmacy.demo_product_diazepam"),
-    }
-    demo_lots = {
-        "para": _get_xmlid("Pharmacy.demo_lot_para_2027"),
-        "amox": _get_xmlid("Pharmacy.demo_lot_amox_2026"),
-        "diaz": _get_xmlid("Pharmacy.demo_lot_diaz_2026"),
-    }
 
     for branch in env["pharmacy.branch"].search([]):
         shop_floor = branch.get_shop_floor_location()

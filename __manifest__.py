@@ -56,7 +56,6 @@ Key Features:
         "security/pharmacy_security.xml",
         "security/ir.model.access.csv",
         # Data
-        "data/pharmacy_currency.xml",
         "data/pharmacy_accounts.xml",
         "data/pharmacy_journal.xml",
         "data/pharmacy_tax_data.xml",
@@ -88,9 +87,9 @@ Key Features:
         # Configuration
         # 'data/pharmacy_config_data.xml',
     ],
-    # 'demo': [
-    #     'demo/pharmacy_demo.xml',
-    # ],
+    'demo': [
+        'demo/pharmacy_demo.xml',
+    ],
     "installable": True,
     "auto_install": False,
     "application": True,

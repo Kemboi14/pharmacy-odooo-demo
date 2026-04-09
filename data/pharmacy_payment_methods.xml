@@ -3,17 +3,7 @@
     <data noupdate="1">
         
         <!-- Pharmacy POS Payment Methods -->
-        
-        <!-- Cash Payment Method -->
-        <record id="payment_method_cash_pharmacy" model="pos.payment.method">
-            <field name="name">Cash</field>
-            <field name="receivable_account_id" ref="pharmacy_cash_receivable"/>
-            <field name="journal_id" ref="pharmacy_cash_journal"/>
-            <field name="is_cash_count">True</field>
-            <field name="split_transactions">False</field>
-            <field name="active">True</field>
-            <field name="company_id" ref="base.main_company"/>
-        </record>
+        <!-- NOTE: Cash payment methods are created per-POS config in hooks.py -->
         
         <!-- M-Pesa Payment Method -->
         <record id="payment_method_mpesa_pharmacy" model="pos.payment.method">

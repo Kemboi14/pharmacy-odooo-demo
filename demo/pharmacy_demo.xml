@@ -27,40 +27,6 @@
             <field name="active">True</field>
         </record>
 
-        <!-- Demo Dosage Forms -->
-        <record id="demo_dosage_tablet" model="pharmacy.dosage.form">
-            <field name="name">Tablet</field>
-            <field name="display_name">Tablet</field>
-            <field name="is_solid">True</field>
-            <field name="oral">True</field>
-            <field name="active">True</field>
-        </record>
-
-        <record id="demo_dosage_capsule" model="pharmacy.dosage.form">
-            <field name="name">Capsule</field>
-            <field name="display_name">Capsule</field>
-            <field name="is_solid">True</field>
-            <field name="oral">True</field>
-            <field name="active">True</field>
-        </record>
-
-        <record id="demo_dosage_syrup" model="pharmacy.dosage.form">
-            <field name="name">Syrup</field>
-            <field name="display_name">Syrup</field>
-            <field name="is_liquid">True</field>
-            <field name="oral">True</field>
-            <field name="active">True</field>
-        </record>
-
-        <record id="demo_dosage_injection" model="pharmacy.dosage.form">
-            <field name="name">Injection</field>
-            <field name="display_name">Injection</field>
-            <field name="is_solid">False</field>
-            <field name="is_liquid">True</field>
-            <field name="oral">False</field>
-            <field name="active">True</field>
-        </record>
-
         <!-- Demo Discount Rules -->
         <record id="demo_discount_pharmacist" model="pharmacy.discount.rule">
             <field name="name">Pharmacist Discount</field>
@@ -94,6 +60,7 @@
         <record id="demo_product_paracetamol_tmpl" model="product.template">
             <field name="name">Paracetamol 500mg Tablets</field>
             <field name="type">consu</field>
+            <field name="tracking">lot</field>
             <field name="sale_ok">True</field>
             <field name="purchase_ok">True</field>
             <field name="available_in_pos">True</field>
@@ -119,6 +86,7 @@
         <record id="demo_product_amoxicillin_tmpl" model="product.template">
             <field name="name">Amoxicillin 500mg Capsules</field>
             <field name="type">consu</field>
+            <field name="tracking">lot</field>
             <field name="sale_ok">True</field>
             <field name="purchase_ok">True</field>
             <field name="available_in_pos">True</field>
@@ -143,6 +111,7 @@
         <record id="demo_product_diazepam_tmpl" model="product.template">
             <field name="name">Diazepam 5mg Tablets (Controlled)</field>
             <field name="type">consu</field>
+            <field name="tracking">lot</field>
             <field name="sale_ok">True</field>
             <field name="purchase_ok">True</field>
             <field name="available_in_pos">True</field>
