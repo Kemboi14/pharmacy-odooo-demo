@@ -33,35 +33,6 @@
             <field name="parent_id" ref="product.product_category_all"/>
         </record>
         
-        <!-- Default Payment Methods for Pharmacy -->
-        <record id="payment_method_cash_pharmacy" model="pos.payment.method">
-            <field name="name">Cash</field>
-            <field name="is_cash_count">True</field>
-            <field name="split_transactions">True</field>
-            <field name="journal_id" ref="Pharmacy.pharmacy_cash_journal"/>
-        </record>
-        
-        <record id="payment_method_mpesa_pharmacy" model="pos.payment.method">
-            <field name="name">M-Pesa</field>
-            <field name="is_cash_count">False</field>
-            <field name="split_transactions">True</field>
-            <field name="receivable_account_id" ref="Pharmacy.pharmacy_mpesa_receivable"/>
-        </record>
-        
-        <record id="payment_method_card_pharmacy" model="pos.payment.method">
-            <field name="name">Card</field>
-            <field name="is_cash_count">False</field>
-            <field name="split_transactions">True</field>
-            <field name="receivable_account_id" ref="Pharmacy.pharmacy_card_receivable"/>
-        </record>
-        
-        <record id="payment_method_insurance_pharmacy" model="pos.payment.method">
-            <field name="name">Insurance</field>
-            <field name="is_cash_count">False</field>
-            <field name="split_transactions">True</field>
-            <field name="receivable_account_id" ref="Pharmacy.pharmacy_insurance_receivable"/>
-        </record>
-        
         <!-- Default Dosage Forms -->
         <record id="dosage_form_tablet" model="pharmacy.dosage.form">
             <field name="name">Tablet</field>

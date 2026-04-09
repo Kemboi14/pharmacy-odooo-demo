@@ -35,29 +35,43 @@ def post_init_hook(env):
         )
 
     # Configure POS payment methods and attach them to each POS config.
-    # This avoids external API calls and keeps only basic configuration.
+    # Cash payment methods cannot be shared across POS configs in Odoo 18,
+    # so we create a unique cash method per POS and share non-cash methods.
     def _get_xmlid(xmlid):
         try:
             return env.ref(xmlid)
         except Exception:
             return env[None]
 
-    payment_methods = []
+    non_cash_methods = []
     for xmlid in [
-        "Pharmacy.payment_method_cash_pharmacy",
         "Pharmacy.payment_method_mpesa_pharmacy",
         "Pharmacy.payment_method_card_pharmacy",
         "Pharmacy.payment_method_insurance_pharmacy",
     ]:
         rec = _get_xmlid(xmlid)
         if rec:
-            payment_methods.append(rec)
+            non_cash_methods.append(rec)
+
+    cash_journal = _get_xmlid("Pharmacy.pharmacy_cash_journal")
+    PaymentMethod = env["pos.payment.method"]
 
     for config in env["pos.config"].search([("is_pharmacy_pos", "=", True)]):
-        if payment_methods:
-            config.write(
-                {"payment_method_ids": [(6, 0, [pm.id for pm in payment_methods])]}
-            )
+        # Check if this config already has a cash payment method
+        existing_cash = config.payment_method_ids.filtered(lambda m: m.is_cash_count)
+        if not existing_cash:
+            cash_pm = PaymentMethod.create({
+                "name": f"{config.name} Cash",
+                "is_cash_count": True,
+                "journal_id": cash_journal.id if cash_journal else False,
+                "company_id": config.company_id.id,
+            })
+        else:
+            cash_pm = existing_cash[0]
+        all_methods = [cash_pm] + non_cash_methods
+        config.write(
+            {"payment_method_ids": [(6, 0, [pm.id for pm in all_methods])]}
+        )
 
     # Put demo stock on hand in each branch shop-floor location so that FEFO / expiry
     # dashboards work immediately.
