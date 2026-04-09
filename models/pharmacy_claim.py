@@ -382,3 +382,30 @@ class PharmacyClaimLine(models.Model):
     def get_line_summary(self):
         """Get formatted line summary"""
         return f"{self.product_id.name} - {self.quantity} x {self.unit_price} = {self.subtotal}"
+
+    def unlink(self):
+        """Override unlink to handle related records properly"""
+        for claim in self:
+            # Check for POS orders that would be orphaned
+            if claim.pos_order_id:
+                raise UserError(_(
+                    'Cannot delete claim %s. It is linked to POS order %s. '
+                    'Please delete the POS order first.' % (
+                        claim.name, claim.pos_order_id.name
+                    )
+                ))
+            
+            # Check for payment records
+            payments = self.env['account.payment'].search([
+                ('ref', 'like', claim.name)
+            ])
+            
+            if payments:
+                raise UserError(_(
+                    'Cannot delete claim %s. There are %d payment records. '
+                    'Please handle payments first.' % (
+                        claim.name, len(payments)
+                    )
+                ))
+        
+        return super(PharmacyClaim, self).unlink()

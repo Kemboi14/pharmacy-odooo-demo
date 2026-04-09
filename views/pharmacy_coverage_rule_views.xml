@@ -80,7 +80,7 @@
                             </group>
                         </page>
                         
-                        <page string="Exclusion Details" name="exclusion" invisible="not is_exclusion">
+                        <page string="Exclusion Details" name="exclusion" invisible="is_exclusion == False">
                             <group string="Exclusion Reason">
                                 <field name="exclusion_reason" nolabel="1" placeholder="Explain why this item is excluded from coverage (e.g., Cosmetic, Over-the-counter, Experimental)"/>
                             </group>

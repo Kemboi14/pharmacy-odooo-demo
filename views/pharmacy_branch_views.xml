@@ -30,7 +30,6 @@
                 <form string="Branch Configuration">
                     <header>
                         <button name="action_view_sales" type="object" string="View Sales" class="btn-primary"/>
-                        <button name="action_view_claims" type="object" string="View Claims" class="btn-secondary"/>
                         <button name="action_view_stock" type="object" string="View Inventory" class="btn-info"/>
                         <field name="active" widget="boolean_toggle"/>
                     </header>
@@ -42,22 +41,24 @@
                             </h1>
                             <label for="code" string="Branch Code"/>
                             <p>
-                                <field name="code" placeholder="e.g. BR-001" readonly="1" class="oe_inline"/>
+                                <field name="code" readonly="1" class="oe_inline" required="0"/>
                             </p>
                         </div>
                         
-                        <group name="branch_admin" string="Branch Administration">
-                            <group name="management">
-                                <field name="manager_id" options="{'no_create': True}" help="Branch manager"/>
+                        <group name="branch_administration" string="Branch Administration">
+                            <group name="management_info">
+                                <field name="manager_id" options="{'no_create': True}" help="Branch manager responsible for operations"/>
                                 <field name="company_id" groups="base.group_multi_company"/>
+                                <field name="user_ids" widget="many2many_tags" help="Staff members assigned to this branch"/>
                             </group>
-                            <group name="details">
-                                <field name="default_pricelist_id" help="Default pricing for customers"/>
-                                <field name="currency_id" options="{'no_create': True}"/>
+                            <group name="financial_config">
+                                <field name="currency_id" options="{'no_create': True}" required="1"/>
+                                <field name="default_pricelist_id" help="Default pricing for customers at this branch"/>
+                                <field name="default_fiscal_position_id" help="Default tax configuration for this branch"/>
                             </group>
                         </group>
                         
-                        <group name="branch_contact" string="Branch Contact Information">
+                        <group name="branch_contact" string="Contact Information">
                             <group>
                                 <field name="phone" widget="phone" placeholder="e.g. +254712345678"/>
                                 <field name="email" widget="email" placeholder="e.g. branch@pharmacy.com"/>
@@ -68,77 +69,86 @@
                         </group>
                         
                         <notebook>
-                            <page string="Address &amp; Location">
-                                <group string="Physical Address">
-                                    <field name="street" placeholder="Street address"/>
-                                </group>
-                                <group>
+                            <page string="Physical Address" name="address">
+                                <group string="Location Details">
                                     <group>
+                                        <field name="street" placeholder="Street address"/>
                                         <field name="street2" placeholder="Building/Suite"/>
                                         <field name="city" placeholder="City" required="1"/>
                                         <field name="state_id" placeholder="State/Region"/>
                                     </group>
                                     <group>
                                         <field name="zip" placeholder="Postal code"/>
-                                        <field name="country_id" placeholder="Country"/>
+                                        <field name="country_id" placeholder="Country" options="{'no_create': True}" required="1"/>
                                     </group>
                                 </group>
                             </page>
                             
-                            <page string="Performance Metrics">
-                                <group string="Financial Summary">
+                            <page string="Financial Configuration" name="finance">
+                                <group string="Tax Configuration">
+                                    <group>
+                                        <field name="tax_calculation_rounding_method"/>
+                                        <field name="default_customer_tax_id" help="Default tax for customer sales"/>
+                                        <field name="default_supplier_tax_id" help="Default tax for supplier purchases"/>
+                                    </group>
+                                </group>
+                                
+                                <group string="Payment Terms">
+                                    <group>
+                                        <field name="cash_payment_term_id" help="Payment terms for cash customers"/>
+                                        <field name="insurance_payment_term_id" help="Payment terms for insurance claims"/>
+                                        <field name="supplier_payment_term_id" help="Payment terms for supplier invoices"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
+                            <page string="Operations Summary" name="operations">
+                                <group string="Branch Performance">
                                     <group>
                                         <field name="total_sales" widget="monetary" readonly="1"/>
                                         <field name="stock_value" widget="monetary" readonly="1"/>
                                     </group>
                                     <group>
-                                        <field name="total_claims" widget="monetary" readonly="1"/>
+                                        <field name="total_claims" widget="monetary" readonly="1" help="Total insurance claims processed"/>
                                     </group>
                                 </group>
                             </page>
                             
-                            <page string="Inventory Locations">
+                            <page string="Related Records" name="related">
                                 <group class="mt-2">
                                     <p class="text-muted" style="font-size: 12px;">
-                                        Storage locations and shelving configured for this branch.
+                                        System records automatically created for this branch.
                                     </p>
                                 </group>
-                                <field name="location_ids" nolabel="1">
-                                    <list>
-                                        <field name="name"/>
-                                        <field name="usage"/>
-                                        <field name="location_type"/>
-                                    </list>
-                                </field>
-                            </page>
-                            
-                            <page string="POS Stations">
-                                <group class="mt-2">
-                                    <p class="text-muted" style="font-size: 12px;">
-                                        Point of Sale configurations for dispensing and sales transactions.
-                                    </p>
+                                
+                                <group string="Inventory Locations">
+                                    <field name="location_ids" nolabel="1">
+                                        <list>
+                                            <field name="name"/>
+                                            <field name="usage"/>
+                                            <field name="location_type"/>
+                                        </list>
+                                    </field>
                                 </group>
-                                <field name="pos_config_ids" nolabel="1">
-                                    <list>
-                                        <field name="name"/>
-                                        <field name="active" decoration-success="active == True" decoration-muted="active == False"/>
-                                    </list>
-                                </field>
-                            </page>
-                            
-                            <page string="Accounting Journals">
-                                <group class="mt-2">
-                                    <p class="text-muted" style="font-size: 12px;">
-                                        Accounting journals for recording transactions at this branch.
-                                    </p>
+                                
+                                <group string="POS Stations">
+                                    <field name="pos_config_ids" nolabel="1">
+                                        <list>
+                                            <field name="name"/>
+                                            <field name="active" decoration-success="active == True" decoration-muted="active == False"/>
+                                        </list>
+                                    </field>
                                 </group>
-                                <field name="journal_ids" nolabel="1">
-                                    <list>
-                                        <field name="name"/>
-                                        <field name="type"/>
-                                        <field name="currency_id"/>
-                                    </list>
-                                </field>
+                                
+                                <group string="Accounting Journals">
+                                    <field name="journal_ids" nolabel="1">
+                                        <list>
+                                            <field name="name"/>
+                                            <field name="type"/>
+                                            <field name="currency_id"/>
+                                        </list>
+                                    </field>
+                                </group>
                             </page>
                         </notebook>
                     </sheet>

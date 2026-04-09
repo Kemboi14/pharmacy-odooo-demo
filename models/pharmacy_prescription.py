@@ -298,4 +298,37 @@ class PharmacyPrescriptionLine(models.Model):
         if self.dosage_instructions:
             parts.append(self.dosage_instructions)
         
-        return " - ".join(parts) if parts else "No dosage instructions"
+        return ' '.join(parts)
+
+    def unlink(self):
+        """Override unlink to handle related records properly"""
+        for prescription in self:
+            # Check for active dispensing records
+            active_dispensing = self.env['pharmacy.dispensing'].search([
+                ('prescription_id', '=', prescription.id),
+                ('dispensed_date', '>=', fields.Date.today())
+            ])
+            
+            if active_dispensing:
+                raise UserError(_(
+                    'Cannot delete prescription %s. There are %d active dispensing records. '
+                    'Please complete dispensing first.' % (
+                        prescription.name, len(active_dispensing)
+                    )
+                ))
+            
+            # Check for related insurance claims
+            related_claims = self.env['pharmacy.claim'].search([
+                ('prescription_id', '=', prescription.id),
+                ('status', 'in', ['submitted', 'approved', 'partially_approved'])
+            ])
+            
+            if related_claims:
+                raise UserError(_(
+                    'Cannot delete prescription %s. There are %d insurance claims in progress. '
+                    'Please resolve claims first.' % (
+                        prescription.name, len(related_claims)
+                    )
+                ))
+        
+        return super(PharmacyPrescription, self).unlink()

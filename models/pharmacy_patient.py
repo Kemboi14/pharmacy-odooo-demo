@@ -23,7 +23,6 @@ class PharmacyPatient(models.Model):
         required=True,
         copy=False,
         readonly=True,
-        default=lambda self: _("New"),
         index=True,
     )
     display_name = fields.Char(compute="_compute_display_name", store=True)
@@ -133,10 +132,14 @@ class PharmacyPatient(models.Model):
     def create(self, vals_list):
         """Override create to auto-generate patient codes and sync with customers"""
         for vals in vals_list:
-            if vals.get("patient_code", _("New")) == _("New"):
-                vals["patient_code"] = self.env["ir.sequence"].next_by_code(
-                    "pharmacy.patient"
-                ) or _("New")
+            # Auto-generate patient code if not provided
+            if not vals.get("patient_code"):
+                sequence_code = self.env["ir.sequence"].next_by_code("pharmacy.patient")
+                if sequence_code:
+                    vals["patient_code"] = sequence_code
+                else:
+                    # Fallback if sequence fails
+                    vals["patient_code"] = f"PAT{str(len(self.search([])) + 1).zfill(6)}"
 
         patients = super(PharmacyPatient, self).create(vals_list)
 
@@ -305,18 +308,30 @@ class PharmacyPatient(models.Model):
             return f"****{decrypted[-4:]}"
         return decrypted
 
-    @api.constrains("phone")
-    def _check_phone(self):
+    @api.constrains('partner_id')
+    def _check_partner_unique(self):
+        """Ensure partner is not linked to multiple active patients"""
         for patient in self:
-            if patient.phone:
-                # Basic phone validation for Kenyan numbers
-                phone_pattern = r"^(\+254|0)?[7]\d{8}$"
-                if not re.match(phone_pattern, patient.phone.replace(" ", "")):
-                    raise ValidationError(
-                        _(
-                            "Invalid phone number format. Please use Kenyan format (e.g., +254712345678 or 0712345678)"
-                        )
-                    )
+            if patient.partner_id:
+                duplicates = self.search([
+                    ('partner_id', '=', patient.partner_id.id),
+                    ('id', '!=', patient.id),
+                    ('active', '=', True)
+                ])
+                if duplicates:
+                    raise ValidationError(_('This customer is already linked to another active patient!'))
+
+    @api.constrains('patient_code')
+    def _check_patient_code_unique(self):
+        """Ensure patient code is unique"""
+        for patient in self:
+            if patient.patient_code:
+                duplicates = self.search([
+                    ('patient_code', '=', patient.patient_code),
+                    ('id', '!=', patient.id)
+                ])
+                if duplicates:
+                    raise ValidationError(_('Patient code must be unique!'))
 
     @api.constrains("email")
     def _check_email(self):
@@ -443,8 +458,52 @@ class PharmacyPatient(models.Model):
                 f"Created customer {partner.name} for patient {patient.patient_code}"
             )
 
+    def unlink(self):
+        """Override unlink to handle related records properly"""
+        # Check for related records that would be orphaned
+        for patient in self:
+            # Check for active prescriptions
+            active_prescriptions = self.env['pharmacy.prescription'].search([
+                ('patient_id', '=', patient.id),
+                ('status', 'in', ['draft', 'active', 'partially_dispensed'])
+            ])
+            
+            if active_prescriptions:
+                raise UserError(_(
+                    'Cannot delete patient %s. There are %d active prescriptions. '
+                    'Please cancel or complete prescriptions first.' % (
+                        patient.name, len(active_prescriptions)
+                    )
+                ))
+            
+            # Check for unpaid claims
+            unpaid_claims = self.env['pharmacy.claim'].search([
+                ('patient_id', '=', patient.id),
+                ('status', 'in', ['submitted', 'approved', 'partially_approved'])
+            ])
+            
+            if unpaid_claims:
+                raise UserError(_(
+                    'Cannot delete patient %s. There are %d unpaid insurance claims. '
+                    'Please resolve claims first.' % (
+                        patient.name, len(unpaid_claims)
+                    )
+                ))
+            
+            # Archive linked customer instead of deleting if they have history
+            if patient.partner_id:
+                customer_orders = self.env['pos.order'].search_count([
+                    ('partner_id', '=', patient.partner_id.id)
+                ])
+                
+                if customer_orders > 0:
+                    # Archive customer to preserve sales history
+                    patient.partner_id.write({'active': False})
+                    _logger.info(f'Archived customer {patient.partner_id.name} due to patient deletion')
+        
+        return super(PharmacyPatient, self).unlink()
+
     def action_sync_to_customer(self):
-        """Create or update linked res.partner (with bidirectional sync)"""
         for patient in self:
             partner_vals = {
                 "name": patient.name,

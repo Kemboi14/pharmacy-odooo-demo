@@ -50,6 +50,31 @@ class PharmacyCoverageRule(models.Model):
     # Active status
     active = fields.Boolean('Active', default=True)
     
+    # Branch applicability
+    branch_ids = fields.Many2many('pharmacy.branch', string='Branches', 
+                               help='Leave empty to apply to all branches')
+    
+    # Patient conditions
+    age_min = fields.Integer('Minimum Age', help='Minimum patient age for this rule')
+    age_max = fields.Integer('Maximum Age', help='Maximum patient age for this rule')
+    gender = fields.Selection([
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('other', 'Other')
+    ], string='Gender', help='Apply rule only to specific gender')
+    
+    # Clinical requirements
+    diagnosis_codes = fields.Char('Diagnosis Codes', 
+                               placeholder='ICD-10 codes',
+                               help='Required diagnosis codes for coverage')
+    valid_prescriber_types = fields.Char('Valid Prescriber Types',
+                                       placeholder='e.g. MD, DO, NP',
+                                       help='Allowed prescriber credentials')
+    
+    # Financial limits
+    max_amount_per_claim = fields.Float('Max Amount per Claim',
+                                     help='Maximum claim amount per submission')
+    
     # Priority (higher number = higher priority)
     priority = fields.Integer('Priority', default=10, help='Higher priority rules override lower priority rules')
     
@@ -60,9 +85,15 @@ class PharmacyCoverageRule(models.Model):
                 raise ValidationError(_('Either Product or Category must be specified'))
             if rule.product_id and rule.category_id:
                 raise ValidationError(_('Cannot specify both Product and Category in the same rule'))
-    
+
+    @api.constrains('age_min', 'age_max')
+    def _check_age_range(self):
+        for rule in self:
+            if rule.age_min and rule.age_max and rule.age_min > rule.age_max:
+                raise ValidationError(_('Minimum age cannot be greater than maximum age'))
+
     @api.constrains('coverage_percentage', 'copay_percentage')
-    def _check_percentages(self):
+    def _check_percentage_limits(self):
         for rule in self:
             if rule.coverage_percentage < 0 or rule.coverage_percentage > 100:
                 raise ValidationError(_('Coverage percentage must be between 0 and 100'))

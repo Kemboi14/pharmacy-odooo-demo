@@ -41,37 +41,39 @@
                             </h1>
                             <label for="patient_code" string="Patient Code"/>
                             <p>
-                                <field name="patient_code" readonly="1" class="oe_inline"/>
+                                <field name="patient_code" readonly="1" class="oe_inline" required="0"/>
                             </p>
                         </div>
                         
-                        <group name="patient_contact_info" string="Contact &amp; Personal Information">
-                            <group name="left_contact">
+                        <group name="patient_contact_info" string="Personal Information">
+                            <group name="basic_info">
+                                <field name="date_of_birth" required="1"/>
+                                <field name="age" readonly="1"/>
+                                <field name="gender" required="1" widget="radio" options="{'horizontal': true}"/>
+                                <field name="national_id" placeholder="National ID/Passport Number"/>
+                            </group>
+                            <group name="contact_details">
                                 <field name="phone" widget="phone" placeholder="e.g. +254712345678"/>
                                 <field name="email" widget="email" placeholder="e.g. john@example.com"/>
-                                <field name="date_of_birth" required="1"/>
-                            </group>
-                            <group name="right_contact">
-                                <field name="national_id" placeholder="e.g. 12345678"/>
-                                <field name="gender" required="1" widget="radio" options="{'horizontal': true}"/>
-                                <field name="age" readonly="1"/>
                             </group>
                         </group>
                         
-                        <group name="medical_basics" string="Medical Information">
-                            <field name="blood_group" placeholder="Select blood type"/>
-                            <field name="allergies" placeholder="List any known allergies"/>
-                            <field name="chronic_conditions" placeholder="List chronic conditions (e.g. Diabetes, Hypertension)"/>
+                        <group name="medical_information" string="Medical Information">
+                            <group name="medical_details">
+                                <field name="blood_group" placeholder="Select blood type"/>
+                                <field name="allergies" placeholder="List any known allergies (e.g. Penicillin, Peanuts)"/>
+                            </group>
+                            <group name="health_status">
+                                <field name="chronic_conditions" placeholder="Chronic conditions (e.g. Diabetes, Hypertension)"/>
+                            </group>
                         </group>
                         
                         <notebook>
-                            <page string="Address Information">
-                                <group>
-                                    <field name="street" placeholder="Street address"/>
-                                </group>
-                                <group>
+                            <page string="Address Information" name="address">
+                                <group string="Physical Address">
                                     <group>
-                                        <field name="street2" placeholder="Apartment/Unit"/>
+                                        <field name="street" placeholder="Street address"/>
+                                        <field name="street2" placeholder="Building/Apartment"/>
                                         <field name="city" placeholder="City"/>
                                         <field name="state_id" placeholder="State/Province"/>
                                     </group>
@@ -82,10 +84,10 @@
                                 </group>
                             </page>
                             
-                            <page string="Insurance Policies">
-                                <group string="Current &amp; Past Insurance Policies" class="mt-2">
+                            <page string="Insurance Coverage" name="insurance">
+                                <group class="mt-2">
                                     <p class="text-muted" style="font-size: 12px;">
-                                        Manage patient's insurance coverage. Add, modify or archive policies here.
+                                        Manage patient's insurance policies and coverage details.
                                     </p>
                                 </group>
                                 <field name="insurance_ids" nolabel="1">
@@ -103,7 +105,7 @@
                                                 <group name="insurer_plan">
                                                     <field name="insurer_id" required="1" options="{'no_create': True}"/>
                                                     <field name="plan_id" required="1" options="{'no_create': True}"/>
-                                                    <field name="member_number" required="1" placeholder="e.g. INS-2024-001"/>
+                                                    <field name="member_number" required="1" placeholder="Insurance member number"/>
                                                 </group>
                                                 <group name="dates">
                                                     <field name="valid_from" required="1" help="Policy start date"/>
@@ -111,19 +113,15 @@
                                                     <field name="status" readonly="1"/>
                                                 </group>
                                             </group>
-                                            <group string="Policy Information">
-                                                <group>
-                                                    <field name="policy_number" placeholder="Optional: Policy reference number"/>
-                                                    <field name="card_number" placeholder="Optional: Insurance card number"/>
-                                                </group>
-                                                <group>
-                                                    <field name="relationship_to_member" help="e.g. Self, Spouse, Child"/>
-                                                </group>
-                                            </group>
                                             <group string="Coverage Details">
                                                 <group>
                                                     <field name="coverage_percentage" widget="percentage" help="Percentage covered by insurer"/>
                                                     <field name="copay_percentage" widget="percentage" help="Patient's co-payment percentage"/>
+                                                </group>
+                                                <group>
+                                                    <field name="policy_number" placeholder="Policy reference number"/>
+                                                    <field name="card_number" placeholder="Insurance card number"/>
+                                                    <field name="relationship_to_member" placeholder="e.g. Self, Spouse, Child"/>
                                                 </group>
                                             </group>
                                             <group>
@@ -134,10 +132,10 @@
                                 </field>
                             </page>
                             
-                            <page string="Prescriptions">
-                                <group string="Patient Prescriptions" class="mt-2">
+                            <page string="Prescription History" name="prescriptions">
+                                <group class="mt-2">
                                     <p class="text-muted" style="font-size: 12px;">
-                                        View-only list of prescriptions issued to this patient.
+                                        Complete prescription history for this patient.
                                     </p>
                                 </group>
                                 <field name="prescription_ids" readonly="1" nolabel="1">
@@ -150,14 +148,16 @@
                                 </field>
                             </page>
                             
-                            <page string="Activity Statistics">
-                                <group string="Patient Activity Metrics">
+                            <page string="Activity Summary" name="statistics">
+                                <group string="Patient Statistics">
                                     <group>
                                         <field name="total_prescriptions" readonly="1" help="Total prescriptions received"/>
-                                        <field name="total_dispensing" readonly="1" help="Total dispensing transactions"/>
+                                        <field name="total_dispensing" readonly="1" help="Total medications dispensed"/>
+                                        <field name="total_pos_orders" readonly="1" help="Total POS transactions"/>
                                     </group>
                                     <group>
                                         <field name="last_visit_date" readonly="1" help="Last pharmacy visit"/>
+                                        <field name="lifetime_value" widget="monetary" readonly="1" help="Total value of all purchases"/>
                                     </group>
                                 </group>
                             </page>

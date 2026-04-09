@@ -15,7 +15,7 @@ class PharmacyBranch(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
     name = fields.Char('Branch Name', required=True, tracking=True)
-    code = fields.Char('Branch Code', required=True, tracking=True, copy=False)
+    code = fields.Char('Branch Code', required=True, tracking=True, copy=False, readonly=True)
     display_name = fields.Char(compute='_compute_display_name', store=True)
     
     # Address fields
@@ -24,7 +24,7 @@ class PharmacyBranch(models.Model):
     city = fields.Char()
     state_id = fields.Many2one('res.country.state', 'State')
     zip = fields.Char('Zip')
-    country_id = fields.Many2one('res.country', 'Country')
+    country_id = fields.Many2one('res.country', 'Country', default=lambda self: self.env.ref('base.ke').id if self.env.ref('base.ke', raise_if_not_found=False) else False)
     
     # Contact information
     phone = fields.Char('Phone')
@@ -105,20 +105,27 @@ class PharmacyBranch(models.Model):
     @api.constrains('code')
     def _check_code_unique(self):
         for branch in self:
-            if self.search_count([('code', '=', branch.code), ('id', '!=', branch.id)]):
-                raise ValidationError(_('Branch code must be unique!'))
+            if branch.code:  # Only check if code is set
+                if self.search_count([('code', '=', branch.code), ('id', '!=', branch.id)]):
+                    raise ValidationError(_('Branch code must be unique!'))
     
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             # Auto-generate branch code if not provided
             if not vals.get('code'):
-                vals['code'] = self.env['ir.sequence'].next_by_code('pharmacy.branch') or 'BR001'
+                sequence_code = self.env['ir.sequence'].next_by_code('pharmacy.branch')
+                if sequence_code:
+                    vals['code'] = sequence_code
+                else:
+                    # Fallback if sequence fails
+                    vals['code'] = f'BR{str(len(self.search([])) + 1).zfill(3)}'
         
         records = super().create(vals_list)
         for record in records:
             record._create_default_locations()
             record._create_default_journals()
+            record._create_default_pos_config()
         return records
     
     def _create_default_locations(self):
@@ -171,6 +178,117 @@ class PharmacyBranch(models.Model):
                 **data
             })
     
+    def _create_default_pos_config(self):
+        """Create default POS configuration for the branch"""
+        # Check if POS config already exists for this branch
+        existing_pos = self.env['pos.config'].search([
+            ('branch_id', '=', self.id),
+            ('company_id', '=', self.company_id.id)
+        ], limit=1)
+        
+        if existing_pos:
+            return  # POS config already exists
+        
+        # Get shop floor location for POS
+        shop_floor = self.get_shop_floor_location()
+        if not shop_floor:
+            return  # No shop floor location available
+        
+        # Create default POS configuration
+        branch_code = (self.code or '').replace(' ', '').upper()
+        suffix = branch_code[-3:] if branch_code else str(self.id)
+        
+        pos_config_vals = {
+            'name': f'{self.name} - Pharmacy POS',
+            'branch_id': self.id,
+            'company_id': self.company_id.id,
+            'currency_id': self.currency_id.id,
+            'is_pharmacy_pos': True,
+            'active': True,
+            
+            # Pharmacy-specific settings
+            'require_prescription_for_rx': True,
+            'require_pharmacist_pin_controlled': True,
+            'require_id_capture_controlled': True,
+            'allow_generic_substitution': True,
+            'block_expired_sales': True,
+            'warn_near_expiry': True,
+            'near_expiry_days': 60,
+            'allow_insurance_sales': True,
+            'require_preauth_above': 5000.0,
+            'enforce_fefo': True,
+            'show_stock_levels': True,
+            'low_stock_threshold': 5,
+            'auto_create_dispensing': True,
+            'require_pharmacist_verification': False,
+            'print_dispensing_label': True,
+            'include_batch_info': True,
+            'include_expiry_info': True,
+        }
+        
+        # Create POS config
+        pos_config = self.env['pos.config'].create(pos_config_vals)
+        
+        _logger.info(f"Created default POS configuration for branch {self.name} ({self.code})")
+    
+    @api.constrains('manager_id')
+    def _check_manager_active(self):
+        """Ensure branch manager is an active user"""
+        for branch in self:
+            if branch.manager_id and not branch.manager_id.active:
+                raise ValidationError(_('Branch manager must be an active user!'))
+
+    @api.constrains('user_ids')
+    def _check_users_active(self):
+        """Ensure assigned users are active"""
+        for branch in self:
+            inactive_users = [user for user in branch.user_ids if not user.active]
+            if inactive_users:
+                raise ValidationError(_('All assigned users must be active! Inactive users: %s') % ', '.join([user.name for user in inactive_users]))
+
+    def unlink(self):
+        """Override unlink to handle related records properly"""
+        for branch in self:
+            # Check for active POS sessions
+            active_sessions = self.env['pos.session'].search([
+                ('config_id.branch_id', '=', branch.id),
+                ('state', 'in', ['opening_controlled', 'opened'])
+            ])
+            
+            if active_sessions:
+                raise UserError(_(
+                    'Cannot delete branch %s. There are %d active POS sessions. '
+                    'Please close sessions first.' % (
+                        branch.name, len(active_sessions)
+                    )
+                ))
+            
+            # Check for pending claims
+            pending_claims = self.env['pharmacy.claim'].search([
+                ('branch_id', '=', branch.id),
+                ('status', 'in', ['submitted', 'approved', 'partially_approved'])
+            ])
+            
+            if pending_claims:
+                raise UserError(_(
+                    'Cannot delete branch %s. There are %d pending insurance claims. '
+                    'Please resolve claims first.' % (
+                        branch.name, len(pending_claims)
+                    )
+                ))
+            
+            # Archive POS configs instead of deleting to preserve transaction history
+            for pos_config in branch.pos_config_ids:
+                pos_orders = self.env['pos.order'].search_count([
+                    ('config_id', '=', pos_config.id)
+                ])
+                
+                if pos_orders > 0:
+                    pos_config.write({'active': False})
+                    _logger.info(f'Archived POS config {pos_config.name} due to branch deletion')
+        
+        return super(PharmacyBranch, self).unlink()
+
     def action_view_sales(self):
         """View sales for this branch"""
         return {
