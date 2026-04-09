@@ -48,7 +48,7 @@
         <record id="action_report_pharmacy_sales_branch" model="ir.actions.act_window">
             <field name="name">Sales by Branch</field>
             <field name="res_model">report.pharmacy.sales.branch</field>
-            <field name="view_mode">tree</field>
+            <field name="view_mode">list</field>
             <field name="view_id" ref="view_report_pharmacy_sales_branch_tree"/>
             <field name="search_view_id" ref="view_report_pharmacy_sales_branch_search"/>
             <field name="context">{'search_default_this_month': 1}</field>
@@ -99,7 +99,7 @@
         <record id="action_report_pharmacy_expiry" model="ir.actions.act_window">
             <field name="name">Stock Expiry Report</field>
             <field name="res_model">report.pharmacy.expiry</field>
-            <field name="view_mode">tree</field>
+            <field name="view_mode">list</field>
             <field name="view_id" ref="view_report_pharmacy_expiry_tree"/>
             <field name="search_view_id" ref="view_report_pharmacy_expiry_search"/>
             <field name="context">{'search_default_expiring_30': 1}</field>
@@ -149,7 +149,7 @@
         <record id="action_report_pharmacy_stock_movement" model="ir.actions.act_window">
             <field name="name">Stock Movement Analysis</field>
             <field name="res_model">report.pharmacy.stock.movement</field>
-            <field name="view_mode">tree</field>
+            <field name="view_mode">list</field>
             <field name="view_id" ref="view_report_pharmacy_stock_movement_tree"/>
             <field name="search_view_id" ref="view_report_pharmacy_stock_movement_search"/>
         </record>
@@ -200,7 +200,7 @@
         <record id="action_report_pharmacy_claims_summary" model="ir.actions.act_window">
             <field name="name">Insurance Claims Summary</field>
             <field name="res_model">report.pharmacy.claims.summary</field>
-            <field name="view_mode">tree</field>
+            <field name="view_mode">list</field>
             <field name="view_id" ref="view_report_pharmacy_claims_summary_tree"/>
             <field name="search_view_id" ref="view_report_pharmacy_claims_summary_search"/>
             <field name="context">{'search_default_this_month': 1}</field>
@@ -239,7 +239,7 @@
         <record id="action_report_pharmacy_rejection_reasons" model="ir.actions.act_window">
             <field name="name">Claim Rejection Reasons</field>
             <field name="res_model">report.pharmacy.rejection.reasons</field>
-            <field name="view_mode">tree</field>
+            <field name="view_mode">list</field>
             <field name="view_id" ref="view_report_pharmacy_rejection_reasons_tree"/>
             <field name="search_view_id" ref="view_report_pharmacy_rejection_reasons_search"/>
         </record>
