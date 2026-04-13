@@ -62,7 +62,7 @@ class PharmacyBranch(models.Model):
                                 'branch_id', 'user_id', 'Assigned Users',
                                 help='Users assigned to this branch')
     company_id = fields.Many2one('res.company', 'Company', required=True,
-                                default=lambda self: self.env.company)
+                                default=lambda self: self.env['res.company'].search([('name', 'ilike', '%kenya%')], limit=1) or self.env.company)
     active = fields.Boolean('Active', default=True, tracking=True)
     
     # Statistics
@@ -198,10 +198,15 @@ class PharmacyBranch(models.Model):
         branch_code = (self.code or '').replace(' ', '').upper()
         suffix = branch_code[-3:] if branch_code else str(self.id)
         
+        # Ensure Kenya company is used
+        kenya_company = self.env['res.company'].search([('name', 'ilike', '%kenya%')], limit=1)
+        if not kenya_company:
+            kenya_company = self.company_id
+        
         pos_config_vals = {
             'name': f'{self.name} - Pharmacy POS',
             'branch_id': self.id,
-            'company_id': self.company_id.id,
+            'company_id': kenya_company.id,
             'currency_id': self.currency_id.id,
             'is_pharmacy_pos': True,
             'active': True,
