@@ -115,8 +115,9 @@ class PosSession(models.Model):
             'insurance_breakdown': {},
         }
         
-        # Payment breakdown
-        for payment in self.env['pos.payment'].search([('pos_order_id.session_id', '=', self.id)]):
+        # Payment breakdown - batch fetch all payments for this session
+        payments = self.env['pos.payment'].search([('pos_order_id.session_id', '=', self.id)])
+        for payment in payments:
             method = payment.payment_method_id.name
             if method not in summary['payment_breakdown']:
                 summary['payment_breakdown'][method] = 0

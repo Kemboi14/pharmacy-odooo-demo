@@ -109,22 +109,36 @@ class StockLot(models.Model):
             ('is_quarantined', '=', False)
         ])
         
+        if not expiring_soon:
+            return 0
+        
+        # Batch fetch pharmacy managers once (avoid N+1 query)
+        manager_group_id = self.env.ref('pharmacy.group_pharmacy_manager').id
+        managers = self.env['res.users'].search([
+            ('groups_id', 'in', manager_group_id)
+        ])
+        
+        # Pre-fetch partner data
+        managers.read(['partner_id', 'name'])
+        
         for lot in expiring_soon:
-            lot._send_expiry_alert_notification()
+            lot._send_expiry_alert_notification(managers)
         
         return len(expiring_soon)
     
-    def _send_expiry_alert_notification(self):
+    def _send_expiry_alert_notification(self, managers=None):
         """Send expiry alert notification for this lot"""
         self.ensure_one()
         
-        # Find pharmacy managers to notify
-        users = self.env['res.users'].search([
-            ('groups_id', 'in', self.env.ref('pharmacy.group_pharmacy_manager').id)
-        ])
+        # Use pre-fetched managers if provided, otherwise fetch
+        if managers is None:
+            manager_group_id = self.env.ref('pharmacy.group_pharmacy_manager').id
+            managers = self.env['res.users'].search([
+                ('groups_id', 'in', manager_group_id)
+            ])
         
-        # Send notification
-        for user in users:
+        # Send notification to all managers
+        for user in managers:
             self.message_post(
                 body=f"<b>Expiry Alert</b><br/>"
                      f"Product: {self.product_id.name}<br/>"
