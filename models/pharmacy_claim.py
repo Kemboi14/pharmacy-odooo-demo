@@ -172,6 +172,9 @@ class PharmacyClaim(models.Model):
         # If fully approved, create invoice
         if status == "approved":
             self._create_invoice()
+            # Auto-create payment record if configured
+            if self.insurer_id.auto_create_payment:
+                self._create_payment_record()
 
     def action_reject(self, rejection_reason=""):
         """Reject claim"""
@@ -202,6 +205,45 @@ class PharmacyClaim(models.Model):
             raise ValidationError(_("Only approved claims can be marked as paid"))
 
         self.write({"status": "paid", "payment_date": fields.Date.today()})
+    
+    def _create_payment_record(self):
+        """Create payment record for approved claim"""
+        self.ensure_one()
+        
+        if not self.insurer_id.partner_id:
+            _logger.warning(f"Cannot create payment for claim {self.name}: Insurer has no partner")
+            return False
+        
+        # Find appropriate journal for insurance payments
+        journal = self.env['account.journal'].search([
+            ('type', '=', 'bank'),
+            ('company_id', '=', self.company_id.id)
+        ], limit=1)
+        
+        if not journal:
+            _logger.warning(f"Cannot create payment for claim {self.name}: No bank journal found")
+            return False
+        
+        # Create payment
+        payment_vals = {
+            'payment_type': 'inbound',
+            'partner_id': self.insurer_id.partner_id.id,
+            'amount': self.approved_amount,
+            'journal_id': journal.id,
+            'currency_id': self.company_id.currency_id.id,
+            'payment_date': fields.Date.today(),
+            'ref': f'Insurance Claim Payment - {self.name}',
+            'payment_method_id': self.env.ref('account.account_payment_method_manual_in').id,
+        }
+        
+        try:
+            payment = self.env['account.payment'].create(payment_vals)
+            payment.action_post()
+            _logger.info(f"Created payment {payment.name} for claim {self.name}")
+            return True
+        except Exception as e:
+            _logger.error(f"Failed to create payment for claim {self.name}: {str(e)}")
+            return False
 
     def action_resubmit(self):
         """Resubmit rejected claim"""

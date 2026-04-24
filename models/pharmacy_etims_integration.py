@@ -44,6 +44,21 @@ class AccountMove(models.Model):
         "Auto Submit to eTIMS", related="company_id.etims_auto_submit", readonly=True
     )
 
+    def action_post(self):
+        """Override post to auto-submit to eTIMS if configured"""
+        result = super().action_post()
+        
+        # Auto-submit to eTIMS if configured and invoice is validated
+        for invoice in self:
+            if invoice.state == 'posted' and invoice.etims_auto_submit and invoice.etims_status == 'draft':
+                try:
+                    invoice.action_submit_to_etims()
+                    _logger.info(f"Auto-submitted invoice {invoice.name} to eTIMS")
+                except Exception as e:
+                    _logger.warning(f"Failed to auto-submit invoice {invoice.name} to eTIMS: {str(e)}")
+        
+        return result
+
     def action_submit_to_etims(self):
         """Submit invoice to KRA eTIMS system"""
         for invoice in self:

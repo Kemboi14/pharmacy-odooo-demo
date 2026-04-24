@@ -99,6 +99,44 @@ class StockLot(models.Model):
                 lot.is_expired = False
                 lot.expiry_status = 'good'
     
+    @api.model
+    def action_send_expiry_alerts(self):
+        """Send expiry alerts for lots about to expire (scheduled action)"""
+        # Find lots expiring in the next 30 days
+        expiring_soon = self.search([
+            ('expiry_date', '>', fields.Date.today()),
+            ('expiry_date', '<=', fields.Date.today() + timedelta(days=30)),
+            ('is_quarantined', '=', False)
+        ])
+        
+        for lot in expiring_soon:
+            lot._send_expiry_alert_notification()
+        
+        return len(expiring_soon)
+    
+    def _send_expiry_alert_notification(self):
+        """Send expiry alert notification for this lot"""
+        self.ensure_one()
+        
+        # Find pharmacy managers to notify
+        users = self.env['res.users'].search([
+            ('groups_id', 'in', self.env.ref('pharmacy.group_pharmacy_manager').id)
+        ])
+        
+        # Send notification
+        for user in users:
+            self.message_post(
+                body=f"<b>Expiry Alert</b><br/>"
+                     f"Product: {self.product_id.name}<br/>"
+                     f"Lot: {self.name}<br/>"
+                     f"Expiry Date: {self.expiry_date}<br/>"
+                     f"Days to Expiry: {self.days_to_expiry}<br/>"
+                     f"Available Quantity: {self.available_quantity}<br/>"
+                     f"Status: {self.expiry_status.replace('_', ' ').title()}",
+                subject=f"Expiry Alert: {self.product_id.name} - {self.name}",
+                partner_ids=[user.partner_id.id]
+            )
+    
     @api.depends('quant_ids')
     def _compute_total_quantity(self):
         for lot in self:
@@ -121,7 +159,11 @@ class StockLot(models.Model):
                 if not lot.is_quarantined:
                     lot.is_quarantined = True
                     lot.quarantine_reason = 'expired'
+                    lot.quarantine_notes = f'Auto-quarantined on {fields.Date.today()} due to expiry date {lot.expiry_date}'
                     _logger.warning(f"Lot {lot.name} auto-quarantined due to expiry")
+                    
+                    # Send notification
+                    lot._send_expiry_notification()
     
     @api.constrains('manufacturing_date', 'expiry_date')
     def _check_dates(self):
@@ -163,6 +205,28 @@ class StockLot(models.Model):
                     if quarantine_location:
                         # Create stock move to quarantine
                         self.env['stock.move']._create_split_move(quant, quarantine_location)
+    
+    def _send_expiry_notification(self):
+        """Send notification about expired/quarantined lot"""
+        self.ensure_one()
+        
+        # Find pharmacy managers to notify
+        users = self.env['res.users'].search([
+            ('groups_id', 'in', self.env.ref('pharmacy.group_pharmacy_manager').id)
+        ])
+        
+        # Send notification
+        for user in users:
+            self.message_post(
+                body=f"<b>Lot Quarantined Due to Expiry</b><br/>"
+                     f"Product: {self.product_id.name}<br/>"
+                     f"Lot: {self.name}<br/>"
+                     f"Expiry Date: {self.expiry_date}<br/>"
+                     f"Quantity: {self.available_quantity}<br/>"
+                     f"Reason: Expired",
+                subject=f"Expired Lot Quarantined: {self.name}",
+                partner_ids=[user.partner_id.id]
+            )
     
     def get_location_quantities(self):
         """Get quantity breakdown by location"""

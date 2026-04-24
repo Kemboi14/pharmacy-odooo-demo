@@ -34,6 +34,19 @@ class PharmacyPatient(models.Model):
         help="Automatically create/update customer record when patient information changes",
     )
 
+    # Insurance automation
+    auto_create_insurance = fields.Boolean(
+        "Auto-Create Insurance Policy",
+        default=False,
+        help="Automatically create default insurance policy when patient is created",
+    )
+    default_insurer_id = fields.Many2one(
+        "pharmacy.insurer", "Default Insurer", help="Default insurer for auto-created insurance policies"
+    )
+    default_plan_id = fields.Many2one(
+        "pharmacy.insurer.plan", "Default Plan", help="Default insurance plan for auto-created policies"
+    )
+
     # Personal information
     date_of_birth = fields.Date("Date of Birth", tracking=True)
     age = fields.Integer(compute="_compute_age", store=True)
@@ -148,6 +161,10 @@ class PharmacyPatient(models.Model):
             if patient.auto_sync_customer and not patient.partner_id:
                 patient._sync_with_customer()
 
+            # Auto-create default insurance policy if enabled
+            if patient.auto_create_insurance and not patient.insurance_ids:
+                patient._create_default_insurance()
+
         return patients
 
     def write(self, vals):
@@ -208,6 +225,41 @@ class PharmacyPatient(models.Model):
             self.partner_id = partner.id
 
         return True
+
+    def _create_default_insurance(self):
+        """Create default insurance policy for patient"""
+        self.ensure_one()
+        
+        if not self.default_insurer_id or not self.default_plan_id:
+            _logger.warning(f"Cannot create default insurance for patient {self.name}: No default insurer/plan configured")
+            return False
+        
+        # Generate default member number if not provided
+        member_number = f"{self.default_insurer_id.code}-{self.patient_code}"
+        
+        # Set default validity period (1 year from today)
+        from datetime import timedelta
+        valid_from = fields.Date.today()
+        valid_to = valid_from + timedelta(days=365)
+        
+        insurance_vals = {
+            'patient_id': self.id,
+            'insurer_id': self.default_insurer_id.id,
+            'plan_id': self.default_plan_id.id,
+            'member_number': member_number,
+            'valid_from': valid_from,
+            'valid_to': valid_to,
+            'status': 'active',
+            'company_id': self.company_id.id,
+        }
+        
+        try:
+            insurance = self.env['pharmacy.patient.insurance'].create(insurance_vals)
+            _logger.info(f"Created default insurance policy {insurance.display_name} for patient {self.name}")
+            return True
+        except Exception as e:
+            _logger.error(f"Failed to create default insurance for patient {self.name}: {str(e)}")
+            return False
 
     @api.depends("name", "patient_code")
     def _compute_display_name(self):

@@ -39,6 +39,60 @@ class PosPaymentMethod(models.Model):
         default=30,
         help="Time to wait for M-Pesa confirmation",
     )
+    
+    # Auto-reconciliation trigger
+    def process_mpesa_callback(self, callback_data):
+        """Process M-Pesa callback and auto-reconcile if configured"""
+        self.ensure_one()
+        
+        # Update payment status based on callback
+        if callback_data.get('ResultCode') == 0:
+            # Success
+            self.mpesa_status = 'confirmed'
+            self.mpesa_confirmation_time = fields.Datetime.now()
+            self.mpesa_transaction_code = callback_data.get('MpesaReceiptNumber')
+            
+            # Auto-reconcile if configured
+            if self.payment_method_id.auto_reconcile:
+                self._auto_reconcile_payment()
+        else:
+            # Failed
+            self.mpesa_status = 'failed'
+            _logger.warning(f"M-Pesa payment failed: {callback_data.get('ResultDesc')}")
+        
+        return True
+    
+    def _auto_reconcile_payment(self):
+        """Automatically reconcile M-Pesa payment with invoice"""
+        self.ensure_one()
+        
+        if not self.pos_order_id:
+            _logger.warning("Cannot reconcile: No POS order linked")
+            return False
+        
+        # Find the invoice for this POS order
+        invoice = self.env['account.move'].search([
+            ('pos_order_id', '=', self.pos_order_id.id),
+            ('state', '=', 'posted')
+        ], limit=1)
+        
+        if not invoice:
+            _logger.warning(f"Cannot reconcile: No posted invoice found for order {self.pos_order_id.name}")
+            return False
+        
+        # Reconcile payment with invoice
+        try:
+            reconcile_line_ids = [(4, line.id) for line in invoice.line_ids if line.account_id.reconcile]
+            self.env['account.payment.reconcile'].create({
+                'payment_ids': [(4, self.id)],
+                'move_line_ids': reconcile_line_ids
+            })
+            
+            _logger.info(f"Auto-reconciled M-Pesa payment {self.mpesa_transaction_code} with invoice {invoice.name}")
+            return True
+        except Exception as e:
+            _logger.error(f"Failed to auto-reconcile payment: {str(e)}")
+            return False
 
     # Statement import
     last_statement_date = fields.Datetime("Last Statement Date")

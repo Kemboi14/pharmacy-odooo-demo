@@ -46,6 +46,9 @@ class PharmacyInsurer(models.Model):
     consolidate_branches = fields.Boolean('Consolidate Branches', default=False,
                                           help='Invoice all branches together or separate invoices per branch')
     
+    auto_create_payment = fields.Boolean('Auto-Create Payment', default=False,
+                                        help='Automatically create payment record when claim is approved')
+    
     partner_id = fields.Many2one('res.partner', 'Associated Partner', help="Partner record for invoicing")
     payment_term_id = fields.Many2one('account.payment.term', string='Payment Term')
     

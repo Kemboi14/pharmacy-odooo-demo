@@ -84,11 +84,29 @@ class PosOrder(models.Model):
                 if patient.partner_id:
                     vals["partner_id"] = patient.partner_id.id
 
+            # Auto-link patient's active insurance policy if not specified
+            if vals.get("patient_id") and not vals.get("plan_id"):
+                patient = self.env["pharmacy.patient"].browse(vals["patient_id"])
+                if patient.active_insurance_id:
+                    vals["insurer_id"] = patient.active_insurance_id.insurer_id.id
+                    vals["plan_id"] = patient.active_insurance_id.plan_id.id
+                    vals["member_number"] = patient.active_insurance_id.member_number
+                    vals["patient_name"] = patient.name
+
         orders = super().create(vals_list)
 
         # Synchronous Pharmacy Automations
         for order in orders:
-            # 1. Create Dispensing Records automatically
+            # 1. Auto-apply insurance coverage rules if insurance sale
+            if order.is_insurance_sale and order.plan_id and order.insurer_id:
+                try:
+                    order._apply_insurance_coverage()
+                except Exception as e:
+                    _logger.warning(
+                        f"Failed to auto-apply insurance coverage for order {order.name}: {str(e)}"
+                    )
+
+            # 2. Create Dispensing Records automatically
             try:
                 order.action_create_dispensing_records()
             except Exception as e:
@@ -157,6 +175,28 @@ class PosOrder(models.Model):
 
         self.claim_id = claim.id
         return claim
+
+    def _apply_insurance_coverage(self):
+        """Automatically apply insurance coverage rules to all order lines"""
+        self.ensure_one()
+        
+        if not self.plan_id or not self.insurer_id:
+            return False
+        
+        # Apply coverage to each line
+        for line in self.lines:
+            try:
+                line.apply_insurance_coverage(
+                    self.insurer_id.id, 
+                    self.plan_id.id, 
+                    self.member_number
+                )
+            except Exception as e:
+                _logger.warning(
+                    f"Failed to apply insurance coverage to line {line.id}: {str(e)}"
+                )
+        
+        return True
 
     def action_create_dispensing_records(self):
         """Create dispensing records from POS order"""
@@ -352,6 +392,21 @@ class PosOrderLine(models.Model):
                 check_result = line.lot_id.check_sale_allowed(line.qty)
                 if not check_result["allowed"]:
                     raise ValidationError(check_result["reason"])
+    
+    @api.onchange('product_id', 'qty')
+    def _onchange_product_auto_select_fefo_lot(self):
+        """Auto-select FEFO lot when product is selected"""
+        if self.product_id and self.qty > 0 and not self.lot_id:
+            # Get branch from order
+            if self.order_id and self.order_id.branch_id:
+                branch = self.order_id.branch_id
+                shop_floor = branch.get_shop_floor_location()
+                
+                if shop_floor:
+                    # Get FEFO lot
+                    fefo_lot = self.product_id.get_fefo_lot(shop_floor.id, self.qty)
+                    if fefo_lot:
+                        self.lot_id = fefo_lot.id
 
     def get_lot_info(self):
         """Get formatted lot information"""

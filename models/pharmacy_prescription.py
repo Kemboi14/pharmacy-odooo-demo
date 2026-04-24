@@ -113,6 +113,14 @@ class PharmacyPrescription(models.Model):
             raise ValidationError(_('Cannot activate prescription without any prescription lines'))
         
         self.write({'status': 'active'})
+        
+        # Auto-create dispensing records if configured
+        for prescription in self:
+            if prescription.branch_id:
+                try:
+                    prescription._create_pending_dispensing_records()
+                except Exception as e:
+                    _logger.warning(f"Failed to auto-create dispensing records for prescription {prescription.name}: {str(e)}")
     
     def action_cancel(self):
         """Cancel the prescription"""
@@ -175,6 +183,31 @@ class PharmacyPrescription(models.Model):
             'allowed': True,
             'remaining_quantity': remaining - quantity
         }
+    
+    def _create_pending_dispensing_records(self):
+        """Create pending dispensing records for all prescription lines"""
+        self.ensure_one()
+        
+        for line in self.line_ids:
+            if line.quantity_prescribed > 0:
+                dispensing_vals = {
+                    'prescription_id': self.id,
+                    'prescription_line_id': line.id,
+                    'patient_id': self.patient_id.id,
+                    'product_id': line.product_id.id,
+                    'quantity': line.quantity_prescribed,
+                    'branch_id': self.branch_id.id,
+                    'company_id': self.company_id.id,
+                    'dispensed_by': self.env.user.id,
+                    'dispensed_date': fields.Datetime.now(),
+                    'dosage_instructions': line.dosage_instructions,
+                }
+                
+                try:
+                    self.env['pharmacy.dispensing'].create(dispensing_vals)
+                    _logger.info(f"Created pending dispensing record for product {line.product_id.name} in prescription {self.name}")
+                except Exception as e:
+                    _logger.error(f"Failed to create dispensing record for line {line.id}: {str(e)}")
     
     def record_dispensing(self, product_id, quantity, lot_id, branch_id, dispensed_by):
         """
