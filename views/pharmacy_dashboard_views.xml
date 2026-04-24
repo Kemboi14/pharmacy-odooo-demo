@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Pharmacy Dashboard View -->
+        <record id="pharmacy_dashboard_view" model="ir.ui.view">
+            <field name="name">pharmacy.dashboard.view</field>
+            <field name="model">pharmacy.dashboard</field>
+            <field name="arch" type="xml">
+                <dashboard>
+                    <view title="Overview">
+                        <div class="row">
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Sales</h5>
+                                        <h2 class="card-text"><field name="total_sales" widget="monetary"/></h2>
+                                        <small class="text-muted"><field name="sales_growth"/>% growth</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Orders</h5>
+                                        <h2 class="card-text"><field name="total_orders"/></h2>
+                                        <small class="text-muted">Avg: <field name="avg_order_value" widget="monetary"/></small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Patients</h5>
+                                        <h2 class="card-text"><field name="total_patients"/></h2>
+                                        <small class="text-muted">Active: <field name="active_patients"/></small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Claim Approval Rate</h5>
+                                        <h2 class="card-text"><field name="claim_approval_rate"/>%</h2>
+                                        <small class="text-muted">Total: <field name="total_claims"/></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </view>
+                    
+                    <view title="Sales">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Sales Today</h5>
+                                        <h3 class="card-text"><field name="sales_today" widget="monetary"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Sales This Week</h5>
+                                        <h3 class="card-text"><field name="sales_week" widget="monetary"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Sales This Month</h5>
+                                        <h3 class="card-text"><field name="sales_month" widget="monetary"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Orders Today</h5>
+                                        <h3 class="card-text"><field name="orders_today"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Orders This Week</h5>
+                                        <h3 class="card-text"><field name="orders_week"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Orders This Month</h5>
+                                        <h3 class="card-text"><field name="orders_month"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </view>
+                    
+                    <view title="Patients">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">New Patients Today</h5>
+                                        <h3 class="card-text"><field name="new_patients_today"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">New Patients This Week</h5>
+                                        <h3 class="card-text"><field name="new_patients_week"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">New Patients This Month</h5>
+                                        <h3 class="card-text"><field name="new_patients_month"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </view>
+                    
+                    <view title="Prescriptions">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Prescriptions Today</h5>
+                                        <h3 class="card-text"><field name="prescriptions_today"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Prescriptions This Week</h5>
+                                        <h3 class="card-text"><field name="prescriptions_week"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Pending Prescriptions</h5>
+                                        <h3 class="card-text"><field name="pending_prescriptions"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </view>
+                    
+                    <view title="Insurance Claims">
+                        <div class="row">
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Submitted</h5>
+                                        <h3 class="card-text"><field name="claims_submitted"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Approved</h5>
+                                        <h3 class="card-text"><field name="claims_approved"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Rejected</h5>
+                                        <h3 class="card-text"><field name="claims_rejected"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Pending</h5>
+                                        <h3 class="card-text"><field name="claims_pending"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Claimed Amount</h5>
+                                        <h3 class="card-text"><field name="total_claimed_amount" widget="monetary"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Paid Amount</h5>
+                                        <h3 class="card-text"><field name="total_paid_amount" widget="monetary"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </view>
+                    
+                    <view title="Stock">
+                        <div class="row">
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Low Stock</h5>
+                                        <h3 class="card-text"><field name="low_stock_products"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Out of Stock</h5>
+                                        <h3 class="card-text"><field name="out_of_stock_products"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Expiring Soon (30d)</h5>
+                                        <h3 class="card-text"><field name="expiring_soon_products"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Expired</h5>
+                                        <h3 class="card-text"><field name="expired_products"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Stock Value</h5>
+                                        <h3 class="card-text"><field name="total_stock_value" widget="monetary"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Products</h5>
+                                        <h3 class="card-text"><field name="total_products"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </view>
+                    
+                    <view title="Dispensing">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Dispensing Today</h5>
+                                        <h3 class="card-text"><field name="dispensing_today"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Dispensing This Week</h5>
+                                        <h3 class="card-text"><field name="dispensing_week"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Dispensing This Month</h5>
+                                        <h3 class="card-text"><field name="dispensing_month"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </view>
+                </dashboard>
+            </field>
+        </record>
+        
+        <!-- Pharmacy Dashboard Action -->
+        <record id="pharmacy_dashboard_action" model="ir.actions.act_window">
+            <field name="name">Pharmacy Dashboard</field>
+            <field name="res_model">pharmacy.dashboard</field>
+            <field name="view_mode">dashboard</field>
+            <field name="view_id" ref="pharmacy_dashboard_view"/>
+            <field name="context">{}</field>
+        </record>
+        
+        <!-- Menu Item -->
+        <menuitem id="pharmacy_dashboard_menu" 
+                  name="Dashboard" 
+                  parent="pharmacy_menu" 
+                  action="pharmacy_dashboard_action"
+                  sequence="1"/>
+        
+    </data>
+</odoo>

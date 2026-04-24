@@ -81,6 +81,7 @@ Key Features:
         "views/pharmacy_financial_reports_views.xml",
         "views/pharmacy_assets.xml",
         "views/pharmacy_company_views.xml",
+        "views/pharmacy_dashboard_views.xml",
         # Reports
         "reports/pharmacy_report_views.xml",
         # POS

@@ -46,6 +46,9 @@ from . import (
     # Audit and compliance
     pharmacy_audit_log,
     
+    # Dashboard and analytics
+    pharmacy_dashboard,
+    
     # Reports
     pharmacy_reports,
 )
