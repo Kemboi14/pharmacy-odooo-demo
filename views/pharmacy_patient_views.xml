@@ -90,6 +90,15 @@
                                         Manage patient's insurance policies and coverage details.
                                     </p>
                                 </group>
+                                <group string="Insurance Automation" name="insurance_automation">
+                                    <group>
+                                        <field name="auto_create_insurance" widget="boolean_toggle" help="Automatically create default insurance policy when patient is created"/>
+                                    </group>
+                                    <group attrs="{'invisible': [('auto_create_insurance', '=', False)]}">
+                                        <field name="default_insurer_id" required="0" options="{'no_create': True}" help="Default insurer for auto-created insurance policies"/>
+                                        <field name="default_plan_id" required="0" options="{'no_create': True}" help="Default insurance plan for auto-created policies"/>
+                                    </group>
+                                </group>
                                 <field name="insurance_ids" nolabel="1">
                                     <list>
                                         <field name="insurer_id"/>

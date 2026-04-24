@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Company Form View Extension for eTIMS Settings -->
+        <record id="view_company_form_etims" model="ir.ui.view">
+            <field name="name">res.company.form.etims</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook/page[@name='general']" position="after">
+                    <page string="eTIMS Configuration" name="etims">
+                        <group string="eTIMS API Settings">
+                            <group>
+                                <field name="etims_api_url" placeholder="https://etims.kra.go.ke/api"/>
+                                <field name="etims_api_key" password="True" placeholder="Enter API key"/>
+                                <field name="etims_tin_number" placeholder="Tax Identification Number"/>
+                            </group>
+                            <group>
+                                <field name="etims_environment"/>
+                                <field name="etims_auto_submit" widget="boolean_toggle" help="Automatically submit invoices to eTIMS after posting"/>
+                            </group>
+                        </group>
+                        <group string="Connection Test">
+                            <button name="action_test_etims_connection" type="object" string="Test eTIMS Connection" class="btn-primary"/>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+        
+    </data>
+</odoo>

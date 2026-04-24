@@ -61,6 +61,7 @@
                             </group>
                             <group>
                                 <field name="consolidate_branches" help="Consolidate claims across all branches"/>
+                                <field name="auto_create_payment" widget="boolean_toggle" help="Automatically create payment record when claim is approved"/>
                                 <field name="company_id" groups="base.group_multi_company"/>
                             </group>
                         </group>

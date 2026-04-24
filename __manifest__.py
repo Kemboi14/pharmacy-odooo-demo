@@ -63,6 +63,7 @@ Key Features:
         "data/pharmacy_company_config.xml",
         "data/pharmacy_data.xml",
         "data/pharmacy_sequence.xml",
+        "data/pharmacy_scheduled_actions.xml",
         # Views
         "views/pharmacy_branch_views.xml",
         "views/pharmacy_patient_views.xml",
@@ -79,6 +80,7 @@ Key Features:
         "views/pharmacy_menu.xml",
         "views/pharmacy_financial_reports_views.xml",
         "views/pharmacy_assets.xml",
+        "views/pharmacy_company_views.xml",
         # Reports
         "reports/pharmacy_report_views.xml",
         # POS
