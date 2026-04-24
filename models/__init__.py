@@ -43,6 +43,9 @@ from . import (
     pharmacy_mpesa_integration,
     pharmacy_etims_integration,
     
+    # Audit and compliance
+    pharmacy_audit_log,
+    
     # Reports
     pharmacy_reports,
 )
